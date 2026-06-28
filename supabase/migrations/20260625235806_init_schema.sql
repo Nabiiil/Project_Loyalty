@@ -193,3 +193,29 @@ create policy customer_select_own_redemptions on redemptions
       where customer_id in (select id from customers where auth_user_id = auth.uid())
     )
   );
+
+-- ============================================================
+-- Role privileges
+-- RLS policies are a second gate; the role needs base table
+-- privileges first. anon/authenticated are Supabase's built-in
+-- roles for unauthenticated and authenticated API callers.
+-- service_role bypasses RLS and doesn't need explicit grants here.
+-- ============================================================
+grant usage on schema public to anon, authenticated;
+
+grant select on businesses   to anon, authenticated;
+grant select on staff_users  to authenticated;
+grant select, insert, update on transactions to authenticated;
+grant select on enrollments  to authenticated;
+grant select on customers    to authenticated;
+grant select on redemptions  to authenticated;
+
+-- service_role is used server-side (Route Handlers, Server Components) to bypass RLS.
+-- In Supabase production this role has implicit all-table access, but locally we must
+-- grant it explicitly because it has NOINHERIT and no default privileges on our tables.
+grant all on businesses   to service_role;
+grant all on staff_users  to service_role;
+grant all on customers    to service_role;
+grant all on enrollments  to service_role;
+grant all on transactions to service_role;
+grant all on redemptions  to service_role;

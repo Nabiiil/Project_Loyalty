@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createStaffClient } from '@/lib/supabase/staff-server'
 import { NewTransactionForm } from './new-transaction-form'
 
 export default async function StaffDashboardPage() {
-  const supabase = await createClient()
+  const supabase = await createStaffClient()
 
   const {
     data: { user },

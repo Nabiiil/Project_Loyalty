@@ -1,0 +1,2 @@
+-- Seed data for local development.
+-- Add local-only test fixtures here (never committed secrets).

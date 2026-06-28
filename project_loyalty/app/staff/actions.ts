@@ -2,7 +2,7 @@
 
 import QRCode from 'qrcode'
 import { headers } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { createStaffClient } from '@/lib/supabase/staff-server'
 import { signQrToken } from '@/lib/qr-token'
 
 export type CreateTransactionState =
@@ -24,7 +24,7 @@ async function buildScanUrl(token: string): Promise<string> {
     const proto = h.get('x-forwarded-proto') ?? 'https'
     origin = host ? `${proto}://${host}` : ''
   }
-  return `${origin.replace(/\/$/, '')}/scan?t=${encodeURIComponent(token)}`
+  return `${origin.replace(/\/$/, '')}/scan/${token}`
 }
 
 function parseAmount(raw: FormDataEntryValue | null): number | null | undefined {
@@ -40,7 +40,7 @@ export async function createTransaction(
   _prevState: CreateTransactionState | null,
   formData: FormData,
 ): Promise<CreateTransactionState> {
-  const supabase = await createClient()
+  const supabase = await createStaffClient()
 
   // 1. Authenticate the staff member (validated against Supabase Auth).
   const {

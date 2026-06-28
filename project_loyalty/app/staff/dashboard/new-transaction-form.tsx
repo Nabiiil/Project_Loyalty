@@ -63,6 +63,13 @@ export function NewTransactionForm() {
           <p className="text-center text-xs text-zinc-500">
             Expires {new Date(state.expiresAt).toLocaleTimeString()}
           </p>
+          {/* DEV ONLY — remove before deploying */}
+          <a
+            href={state.scanUrl}
+            className="break-all text-center text-xs text-blue-500 underline"
+          >
+            {state.scanUrl}
+          </a>
         </div>
       )}
     </div>

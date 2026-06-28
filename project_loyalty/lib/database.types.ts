@@ -226,7 +226,16 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      scan_transaction: {
+        Args: {
+          p_qr_token: string
+          p_auth_user_id?: string | null
+          p_device_token?: string | null
+        }
+        Returns: Json
+      }
+    }
     Enums: {
       signup_source: "qr_scan" | "direct_signup" | "business_referral"
       transaction_status: "pending" | "scanned" | "expired"
