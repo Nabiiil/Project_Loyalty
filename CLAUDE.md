@@ -41,7 +41,7 @@ Do not introduce additional infrastructure (Redis, separate microservices, addit
 
 ## Data model
 
-Canonical reference: `schema.sql` at the repo root, that file is the single source of truth for the actual schema (tables, types, indexes, RLS policies). The summary below is just for quick orientation, if it ever drifts from `schema.sql`, the SQL file wins.
+Canonical reference: `supabase/migrations/20260625235806_init_schema.sql` — this is the single source of truth for the actual schema (tables, types, indexes, RLS policies). The filename follows Supabase migration naming convention (timestamp prefix). The summary below is just for quick orientation, if it ever drifts from that file, the SQL file wins.
 
 Core tables:
 - `businesses` (id, name, contact info, reward_threshold, created_at)
@@ -51,7 +51,7 @@ Core tables:
 - `transactions` (id, business_id, customer_id nullable until scanned, qr_token, amount, status: pending/scanned/expired, created_at)
 - `redemptions` (id, enrollment_id, redemption_code, status: pending/verified, created_at, verified_at)
 
-Keep schema changes as deliberate, reviewed edits to `schema.sql`, not silent drift between that file and the live database.
+Keep schema changes as deliberate, reviewed edits to `supabase/migrations/20260625235806_init_schema.sql`, not silent drift between that file and the live database.
 
 ## What we are deliberately NOT solving in the MVP
 
@@ -113,6 +113,6 @@ Always check with the founder before marking a milestone area "done" — pilot f
 ## What Claude Code should NOT do without asking
 
 - Do not add new third-party services or paid infrastructure.
-- Do not change the core data model in a way that breaks `schema.sql` without flagging it first.
+- Do not change the core data model in a way that breaks `supabase/migrations/20260625235806_init_schema.sql` without flagging it first.
 - Do not expand MVP scope (see explicitly out-of-scope list above) even if it seems like a small addition.
 - Do not commit secrets, API keys, or `.env` files.
