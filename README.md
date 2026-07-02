@@ -41,13 +41,17 @@ This starts Postgres, Auth, Storage, and Studio inside Docker and applies the mi
 
 ```bash
 npx supabase db reset
+node supabase/setup-dev.mjs
 ```
 
-This wipes the local DB, re-applies the migration, then runs `supabase/seed.sql`, which creates:
+`db reset` wipes the local DB, re-applies the migration, and creates the test business (Demo Café).
+`setup-dev.mjs` creates the staff auth account via the GoTrue admin API and links it to the business.
+
+This gives you:
 - A test business: **Demo Café** (5-stamp reward)
 - A test staff account: **staff@demo.com / password123**
 
-> Run this any time you want a clean slate.
+> Run both commands any time you want a clean slate.
 
 ### 4. Configure environment variables
 
