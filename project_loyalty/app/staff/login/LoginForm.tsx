@@ -40,6 +40,10 @@ function getStaffClient() {
       {
         auth: {
           storage: staffCookieStorage,
+          // Unique storageKey → unique BroadcastChannel key ('supabase-staff-auth').
+          // Without this, the customer SIGNED_IN broadcast overwrites staff_sb-*
+          // cookies because both clients share the same default channel key.
+          storageKey: 'staff-auth',
           detectSessionInUrl: false,
           persistSession: true,
           autoRefreshToken: true,

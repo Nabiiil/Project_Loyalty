@@ -12,6 +12,11 @@ export async function createStaffClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // storageKey must match the browser staff client so the server looks for
+      // 'staff-auth' in the stripped-prefix cookies (staff_staff-auth → staff-auth).
+      // @supabase/ssr omits storageKey from its auth type but GoTrue still honours it.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      auth: { storageKey: 'staff-auth' } as any,
       cookies: {
         getAll() {
           // Strip the prefix before handing to GoTrue so it sees normal key names.

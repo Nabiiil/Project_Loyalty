@@ -51,7 +51,13 @@ export async function proxy(request: NextRequest) {
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: cookieHandlers },
+    {
+      cookies: cookieHandlers,
+      // Staff routes must use the same storageKey as the browser staff client
+      // so GoTrue searches for 'staff-auth' in the stripped-prefix cookie list.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(isStaffRoute ? { auth: { storageKey: 'staff-auth' } as any } : {}),
+    },
   )
 
   await supabase.auth.getUser()
