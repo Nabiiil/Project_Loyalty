@@ -97,3 +97,52 @@ export async function createTransaction(
 
   return { ok: true, qrDataUrl, scanUrl, amount, expiresAt }
 }
+
+export type VerifyRedemptionState =
+  | { ok: true; valid: true; businessName: string }
+  | { ok: true; valid: false; reason: string }
+  | { ok: false; error: string }
+
+/**
+ * Staff enters a customer's redemption code. The verify_redemption() DB function
+ * is the source of truth: it re-checks eligibility live and atomically consumes
+ * the code + resets the stamp count in one locked transaction. We call it
+ * through the staff's own authenticated session, so auth.uid() inside the
+ * function resolves to this staff member and scopes the check to their business.
+ */
+export async function verifyRedemption(
+  _prevState: VerifyRedemptionState | null,
+  formData: FormData,
+): Promise<VerifyRedemptionState> {
+  const supabase = await createStaffClient()
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { ok: false, error: 'You must be signed in to verify a reward.' }
+  }
+
+  const code = ((formData.get('code') as string | null) ?? '').trim().toUpperCase()
+  if (!code) {
+    return { ok: false, error: 'Enter a redemption code.' }
+  }
+
+  const { data, error } = await supabase.rpc('verify_redemption', { p_code: code })
+  if (error) {
+    console.error('verify_redemption error:', error)
+    return { ok: false, error: 'Something went wrong. Please try again.' }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = data as any
+  if (!raw?.ok) {
+    return { ok: false, error: 'Something went wrong. Please try again.' }
+  }
+
+  if (raw.valid) {
+    return { ok: true, valid: true, businessName: raw.business_name }
+  }
+  return { ok: true, valid: false, reason: raw.reason ?? 'invalid_code' }
+}

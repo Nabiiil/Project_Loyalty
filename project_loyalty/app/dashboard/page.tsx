@@ -115,7 +115,7 @@ export default async function DashboardPage() {
         ) : (
           <div className="flex flex-col gap-4">
             {enrollments.map((e) => (
-              <EnrollmentCard key={e.id} enrollment={e} />
+              <EnrollmentCard key={e.id} enrollment={e} isClaimed={!!user} />
             ))}
           </div>
         )}

@@ -197,6 +197,7 @@ export type Database = {
           status: Database["public"]["Enums"]["redemption_status"]
           created_at: string
           verified_at: string | null
+          expires_at: string | null
         }
         Insert: {
           id?: string
@@ -205,6 +206,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["redemption_status"]
           created_at?: string
           verified_at?: string | null
+          expires_at?: string | null
         }
         Update: {
           id?: string
@@ -213,6 +215,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["redemption_status"]
           created_at?: string
           verified_at?: string | null
+          expires_at?: string | null
         }
         Relationships: [
           {
@@ -232,6 +235,21 @@ export type Database = {
           p_qr_token: string
           p_auth_user_id?: string | null
           p_device_token?: string | null
+        }
+        Returns: Json
+      }
+      create_redemption: {
+        Args: {
+          p_enrollment_id: string
+          p_customer_id: string
+          p_ttl_seconds?: number
+        }
+        Returns: Json
+      }
+      verify_redemption: {
+        Args: {
+          p_code: string
+          p_staff_auth_user_id?: string | null
         }
         Returns: Json
       }

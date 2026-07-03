@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createStaffClient } from '@/lib/supabase/staff-server'
 import { NewTransactionForm } from './new-transaction-form'
+import { VerifyRewardForm } from './verify-reward-form'
 
 export default async function StaffDashboardPage() {
   const supabase = await createStaffClient()
@@ -43,6 +44,8 @@ export default async function StaffDashboardPage() {
       </header>
 
       <NewTransactionForm />
+
+      <VerifyRewardForm />
     </main>
   )
 }

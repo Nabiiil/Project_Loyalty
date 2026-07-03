@@ -1,6 +1,13 @@
 import type { EnrollmentRow } from './page'
+import { RewardClaim } from './RewardClaim'
 
-export function EnrollmentCard({ enrollment }: { enrollment: EnrollmentRow }) {
+export function EnrollmentCard({
+  enrollment,
+  isClaimed,
+}: {
+  enrollment: EnrollmentRow
+  isClaimed: boolean
+}) {
   const { current_stamps, businesses } = enrollment
   const name = businesses?.name ?? 'Unknown business'
   const threshold = businesses?.reward_threshold ?? 10
@@ -36,11 +43,13 @@ export function EnrollmentCard({ enrollment }: { enrollment: EnrollmentRow }) {
         ))}
       </div>
 
-      <p className="text-right text-sm text-gray-400">
-        {rewardReached
-          ? 'Show to staff to redeem'
-          : `${current_stamps} / ${threshold}`}
-      </p>
+      {rewardReached ? (
+        <RewardClaim enrollmentId={enrollment.id} isClaimed={isClaimed} />
+      ) : (
+        <p className="text-right text-sm text-gray-400">
+          {current_stamps} / {threshold}
+        </p>
+      )}
     </div>
   )
 }
