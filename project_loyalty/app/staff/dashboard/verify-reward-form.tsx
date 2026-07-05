@@ -15,15 +15,10 @@ export function VerifyRewardForm() {
   const [state, formAction, pending] = useActionState(verifyRedemption, null)
 
   return (
-    <section className="flex flex-col gap-4 border-t border-zinc-200 pt-8 dark:border-zinc-800">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold tracking-tight text-black dark:text-white">
-          Verify a reward
-        </h2>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Enter the code the customer shows you.
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        Enter the code the customer shows you.
+      </p>
 
       <form action={formAction} className="flex flex-col gap-4">
         <input
@@ -75,6 +70,6 @@ export function VerifyRewardForm() {
           </p>
         </div>
       )}
-    </section>
+    </div>
   )
 }
