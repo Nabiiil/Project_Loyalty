@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import { GoogleSignInButton } from '@/components/GoogleSignInButton'
 
 type Step = 'input' | 'otp'
 
@@ -52,7 +53,15 @@ export default function LoginPage() {
 
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Sign in</h1>
-          <p className="text-sm text-gray-500">We'll send a 6-digit code to your inbox.</p>
+          <p className="text-sm text-gray-500">We&apos;ll send a 6-digit code to your inbox.</p>
+        </div>
+
+        <GoogleSignInButton />
+
+        <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-gray-400">
+          <span className="h-px flex-1 bg-gray-200" />
+          or
+          <span className="h-px flex-1 bg-gray-200" />
         </div>
 
         {step === 'input' && (
@@ -89,7 +98,7 @@ export default function LoginPage() {
               <a href="http://localhost:54324" target="_blank" rel="noreferrer" className="underline">
                 Inbucket
               </a>{' '}
-              if you're testing locally.
+              if you&apos;re testing locally.
             </p>
             <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
               Verification code

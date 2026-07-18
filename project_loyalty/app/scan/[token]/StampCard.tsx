@@ -1,5 +1,7 @@
 'use client'
 
+import { SignupInvite } from '@/components/SignupInvite'
+
 export type ScanResult =
   | {
       ok: true
@@ -46,7 +48,9 @@ export function StampCard({ result, businessName }: Props) {
   const stampsLeft = rewardThreshold - currentStamps
 
   return (
-    <main className="min-h-dvh flex items-center justify-center bg-white px-6">
+    <main className="min-h-dvh flex flex-col bg-white">
+      <SignupInvite />
+      <div className="flex-1 flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-xs flex flex-col items-center gap-7 text-center">
 
         {businessName && (
@@ -89,6 +93,7 @@ export function StampCard({ result, businessName }: Props) {
         <a href="/dashboard" className="text-sm text-gray-400 underline underline-offset-2">
           View all my cards
         </a>
+      </div>
       </div>
     </main>
   )

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { EnrollmentCard } from './EnrollmentCard'
 import { DashboardHeader } from './DashboardHeader'
+import { SignupInvite } from '@/components/SignupInvite'
 
 export type EnrollmentRow = {
   id: string
@@ -85,25 +86,12 @@ export default async function DashboardPage() {
   }
 
   return (
-    <main className="min-h-dvh bg-white px-5 py-10">
+    <main className="min-h-dvh bg-white">
+      {/* Persistent, benefit-led signup invite. Self-hides once authenticated. */}
+      <SignupInvite />
+      <div className="px-5 py-10">
       <div className="mx-auto max-w-sm flex flex-col gap-6">
         <DashboardHeader variant={headerVariant} />
-
-        {/* Claim banner — anonymous users who already have stamps */}
-        {!user && deviceToken && enrollments.length > 0 && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex flex-col gap-1">
-            <p className="text-sm font-semibold text-amber-900">Your stamps aren't saved yet</p>
-            <p className="text-xs text-amber-700">
-              Create an account so you never lose them if you clear your browser or switch devices.
-            </p>
-            <a
-              href="/signup"
-              className="mt-1 text-sm font-semibold text-amber-900 underline underline-offset-2"
-            >
-              Create account →
-            </a>
-          </div>
-        )}
 
         {enrollments.length === 0 ? (
           <div className="rounded-2xl border border-gray-100 p-8 text-center flex flex-col gap-2 shadow-sm">
@@ -119,6 +107,7 @@ export default async function DashboardPage() {
             ))}
           </div>
         )}
+      </div>
       </div>
     </main>
   )
