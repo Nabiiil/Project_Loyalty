@@ -9,7 +9,13 @@ export type EnrollmentRow = {
   id: string
   current_stamps: number
   business_id: string
-  businesses: { name: string; reward_threshold: number; reward_description: string } | null
+  businesses: {
+    name: string
+    reward_threshold: number
+    reward_description: string
+    logo_url: string | null
+    brand_color: string | null
+  } | null
 }
 
 export default async function DashboardPage() {
@@ -41,7 +47,9 @@ export default async function DashboardPage() {
   const enrollments: EnrollmentRow[] = customerId
     ? ((await service
         .from('enrollments')
-        .select('id, current_stamps, business_id, businesses(name, reward_threshold, reward_description)')
+        .select(
+          'id, current_stamps, business_id, businesses(name, reward_threshold, reward_description, logo_url, brand_color)',
+        )
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false })
       ).data ?? []) as EnrollmentRow[]

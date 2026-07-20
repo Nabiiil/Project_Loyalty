@@ -7,38 +7,7 @@ import { redirect } from 'next/navigation'
 import { createStaffClient } from '@/lib/supabase/staff-server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { signQrToken } from '@/lib/qr-token'
-
-/**
- * Resolves the calling session to an OWNER staff row, or an error string.
- * Every owner-only action starts here — the role comes from the caller's own
- * staff_users row in the DB, never from anything the client sent. Fails closed:
- * no session, no staff row, or role !== 'owner' all deny.
- */
-async function requireOwner(): Promise<
-  | { ok: true; staffId: string; businessId: string }
-  | { ok: false; error: string }
-> {
-  const supabase = await createStaffClient()
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return { ok: false, error: 'You must be signed in as the business owner.' }
-  }
-
-  const { data: staff } = await supabase
-    .from('staff_users')
-    .select('id, business_id, role')
-    .eq('auth_user_id', user.id)
-    .single()
-  if (!staff || staff.role !== 'owner') {
-    return { ok: false, error: 'Only the business owner can manage staff.' }
-  }
-
-  return { ok: true, staffId: staff.id, businessId: staff.business_id }
-}
+import { requireOwner } from '@/lib/staff-owner'
 
 export type CreateTransactionState =
   | {
@@ -255,6 +224,58 @@ export async function updateBusinessSettings(
     rewardThreshold: raw.reward_threshold,
     rewardDescription: raw.reward_description,
   }
+}
+
+export type UpdateIdentityState =
+  | { ok: true; name: string; brandColor: string | null }
+  | { ok: false; error: string }
+  | null
+
+/**
+ * Owner updates the business's public identity: display name and the optional
+ * accent color customers see on their enrollment card. (The logo goes through
+ * /api/business-logo — file uploads stay out of the action layer.) The write
+ * runs through the owner's own session, so the owner_update_own_business RLS
+ * policy re-checks the role at the DB and the brand-color format constraint is
+ * the final validator.
+ */
+export async function updateBusinessIdentity(
+  _prevState: UpdateIdentityState,
+  formData: FormData,
+): Promise<UpdateIdentityState> {
+  const owner = await requireOwner()
+  if (!owner.ok) {
+    return { ok: false, error: owner.error }
+  }
+
+  const name = ((formData.get('name') as string | null) ?? '').trim()
+  if (!name || name.length > 80) {
+    return { ok: false, error: 'Enter the business name (max 80 characters).' }
+  }
+
+  const rawColor = ((formData.get('brand_color') as string | null) ?? '').trim().toLowerCase()
+  const brandColor = rawColor === '' ? null : rawColor
+  if (brandColor !== null && !/^#[0-9a-f]{6}$/.test(brandColor)) {
+    return { ok: false, error: 'Pick a valid accent color.' }
+  }
+
+  const supabase = await createStaffClient()
+  const { error } = await supabase
+    .from('businesses')
+    .update({ name, brand_color: brandColor })
+    .eq('id', owner.businessId)
+    .select('id')
+    .single()
+  if (error) {
+    console.error('updateBusinessIdentity error:', error)
+    return { ok: false, error: 'Could not save. Please try again.' }
+  }
+
+  // Customers see the name and accent on their dashboard cards.
+  revalidatePath('/dashboard')
+  revalidatePath('/staff/dashboard/settings')
+
+  return { ok: true, name, brandColor }
 }
 
 /**

@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createStaffClient } from '@/lib/supabase/staff-server'
+import { IdentityForm } from './identity-form'
 import { SettingsForm } from './settings-form'
 import { StaffManager } from './staff-manager'
 
@@ -36,7 +37,7 @@ export default async function StaffSettingsPage() {
 
   const { data: business } = await supabase
     .from('businesses')
-    .select('reward_threshold, reward_description, earning_mode')
+    .select('name, logo_url, brand_color, reward_threshold, reward_description, earning_mode')
     .eq('id', staff.business_id)
     .single()
   if (!business) {
@@ -55,6 +56,15 @@ export default async function StaffSettingsPage() {
       <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white">
         Settings
       </h1>
+
+      <h2 className="text-lg font-semibold text-black dark:text-white">Business identity</h2>
+      <IdentityForm
+        initialName={business.name}
+        initialLogoUrl={business.logo_url}
+        initialBrandColor={business.brand_color}
+      />
+
+      <h2 className="text-lg font-semibold text-black dark:text-white">Loyalty program</h2>
       <SettingsForm
         initialThreshold={business.reward_threshold}
         initialDescription={business.reward_description}

@@ -36,33 +36,39 @@ export type Database = {
     Tables: {
       businesses: {
         Row: {
+          brand_color: string | null
           contact_email: string | null
           contact_phone: string | null
           created_at: string
           earning_mode: Database["public"]["Enums"]["earning_mode"]
           id: string
+          logo_url: string | null
           name: string
           points_per_unit: number | null
           reward_description: string
           reward_threshold: number
         }
         Insert: {
+          brand_color?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
           earning_mode?: Database["public"]["Enums"]["earning_mode"]
           id?: string
+          logo_url?: string | null
           name: string
           points_per_unit?: number | null
           reward_description?: string
           reward_threshold?: number
         }
         Update: {
+          brand_color?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
           earning_mode?: Database["public"]["Enums"]["earning_mode"]
           id?: string
+          logo_url?: string | null
           name?: string
           points_per_unit?: number | null
           reward_description?: string
