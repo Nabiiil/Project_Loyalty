@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
   const service = createServiceClient()
   const { data, error } = await service.rpc('scan_transaction', {
     p_qr_token: qrToken,
-    p_auth_user_id: user?.id ?? null,
-    p_device_token: existingDeviceToken,
+    p_auth_user_id: user?.id ?? undefined,
+    p_device_token: existingDeviceToken ?? undefined,
   })
 
   if (error) {
@@ -35,10 +35,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: raw?.error ?? 'server_error' })
   }
 
-  // Fetch business name
+  // Fetch business name + the reward the customer is working toward.
   const { data: biz } = await service
     .from('businesses')
-    .select('name')
+    .select('name, reward_description')
     .eq('id', raw.business_id)
     .single()
 
@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
     transactionId: raw.transaction_id,
     businessId: raw.business_id,
     businessName: biz?.name ?? null,
+    rewardDescription: biz?.reward_description ?? null,
     customerId: raw.customer_id,
     deviceToken: raw.device_token ?? null,
     isNewCustomer: raw.is_new_customer,

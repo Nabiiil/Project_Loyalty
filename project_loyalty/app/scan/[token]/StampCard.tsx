@@ -29,9 +29,10 @@ const ERROR_COPY: Record<string, string> = {
 type Props = {
   result: ScanResult
   businessName: string | null
+  rewardDescription: string | null
 }
 
-export function StampCard({ result, businessName }: Props) {
+export function StampCard({ result, businessName, rewardDescription }: Props) {
   if (!result.ok) {
     const message = ERROR_COPY[result.error] ?? ERROR_COPY.server_error
     return (
@@ -64,6 +65,9 @@ export function StampCard({ result, businessName }: Props) {
             <span className="text-6xl" aria-hidden>🎉</span>
             <div className="space-y-1">
               <h1 className="text-3xl font-bold text-gray-900">Free reward!</h1>
+              {rewardDescription && (
+                <p className="text-lg font-semibold text-gray-900">{rewardDescription}</p>
+              )}
               <p className="text-gray-500">Show this screen to collect your reward.</p>
             </div>
           </>
@@ -80,6 +84,11 @@ export function StampCard({ result, businessName }: Props) {
               <p className="text-gray-500">
                 {stampsLeft === 1 ? '1 more stamp to go' : `${stampsLeft} more stamps to go`}
               </p>
+              {rewardDescription && (
+                <p className="text-sm text-gray-500">
+                  toward <span className="font-semibold text-gray-900">{rewardDescription}</span>
+                </p>
+              )}
             </div>
           </>
         )}

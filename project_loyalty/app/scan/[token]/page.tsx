@@ -7,6 +7,7 @@ import type { ScanResult } from './StampCard'
 export default function ScanPage({ params }: { params: Promise<{ token: string }> }) {
   const [result, setResult] = useState<ScanResult | null>(null)
   const [businessName, setBusinessName] = useState<string | null>(null)
+  const [rewardDescription, setRewardDescription] = useState<string | null>(null)
 
   useEffect(() => {
     params.then(async ({ token }) => {
@@ -18,6 +19,7 @@ export default function ScanPage({ params }: { params: Promise<{ token: string }
       const data = await res.json()
       if (data.ok) {
         setBusinessName(data.businessName)
+        setRewardDescription(data.rewardDescription)
         setResult({
           ok: true,
           transactionId: data.transactionId,
@@ -47,5 +49,7 @@ export default function ScanPage({ params }: { params: Promise<{ token: string }
     )
   }
 
-  return <StampCard result={result} businessName={businessName} />
+  return (
+    <StampCard result={result} businessName={businessName} rewardDescription={rewardDescription} />
+  )
 }

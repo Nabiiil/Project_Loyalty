@@ -45,7 +45,7 @@ Canonical reference: `supabase/migrations/20260625235806_init_schema.sql` — th
 
 Core tables:
 - `businesses` (id, name, contact info, reward_threshold, created_at)
-- `staff_users` (id, business_id, name, login credentials)
+- `staff_users` (id, business_id, name, login credentials, role: owner/staff — owner edits settings and manages staff logins; staff only run transactions and verify rewards; one owner per business, set at founder onboarding, default is staff)
 - `customers` (id, device_token UNIQUE nullable, phone_number nullable, email UNIQUE nullable, auth_user_id nullable FK to auth.users, claimed_at nullable, signup_source nullable enum, created_at) — two entry points populate this differently: a QR-scan-first customer starts with only device_token set, everything else fills in later at redemption; a direct-signup customer has auth_user_id/phone/email/claimed_at set immediately and device_token stays null
 - `enrollments` (id, customer_id, business_id, current_stamps, created_at) — one row per customer-business pair
 - `transactions` (id, business_id, customer_id nullable until scanned, qr_token, amount, status: pending/scanned/expired, created_at)

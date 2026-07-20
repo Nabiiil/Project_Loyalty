@@ -11,6 +11,7 @@ export function EnrollmentCard({
   const { current_stamps, businesses } = enrollment
   const name = businesses?.name ?? 'Unknown business'
   const threshold = businesses?.reward_threshold ?? 10
+  const rewardDescription = businesses?.reward_description ?? 'Free item'
   const rewardReached = current_stamps >= threshold
   const visible = Math.min(threshold, 12)
   const filled = Math.min(current_stamps, visible)
@@ -26,6 +27,9 @@ export function EnrollmentCard({
           </span>
         )}
       </div>
+
+      {/* What the customer is working toward — not just an abstract count. */}
+      <p className="-mt-2 text-base font-semibold text-gray-900">{rewardDescription}</p>
 
       <div
         className="grid gap-2"

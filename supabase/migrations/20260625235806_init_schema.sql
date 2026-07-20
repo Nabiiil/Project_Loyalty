@@ -8,12 +8,19 @@ create extension if not exists "pgcrypto";
 -- businesses
 -- One row per client business (cafe, restaurant, shop).
 -- ============================================================
+-- How a business earns stamps. MVP only uses per_transaction (one stamp per
+-- purchase); per_amount (spend-based) is modelled but not implemented yet.
+create type earning_mode as enum ('per_transaction', 'per_amount');
+
 create table businesses (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   contact_email text,
   contact_phone text,
   reward_threshold int not null default 10, -- stamps needed for a free reward
+  earning_mode earning_mode not null default 'per_transaction',
+  points_per_unit numeric(10,2),            -- reserved for per_amount; unused in MVP
+  reward_description text not null default 'Free item', -- shown to customers
   created_at timestamptz not null default now()
 );
 
@@ -21,11 +28,18 @@ create table businesses (
 -- staff_users
 -- One row per staff login, scoped to a single business.
 -- ============================================================
+-- owner: founder-onboarded business owner — edits settings, manages staff
+-- logins. staff: counter staff — transactions and reward verification only.
+-- Default is the least-privileged role; owner is only ever set explicitly
+-- (founder onboarding via service role). One owner per business in the MVP.
+create type staff_role as enum ('owner', 'staff');
+
 create table staff_users (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null references businesses(id) on delete cascade,
   auth_user_id uuid not null references auth.users(id) on delete cascade,
   name text,
+  role staff_role not null default 'staff',
   created_at timestamptz not null default now(),
   unique (auth_user_id)
 );
@@ -132,14 +146,48 @@ alter table enrollments enable row level security;
 alter table transactions enable row level security;
 alter table redemptions enable row level security;
 
+-- is_business_owner(): does the current auth.uid() hold an owner staff_users
+-- row for this business? SECURITY DEFINER because (1) a policy on staff_users
+-- cannot subquery staff_users itself (infinite RLS recursion) and (2) it keeps
+-- the owner test in one place for every owner-gated object.
+create or replace function public.is_business_owner(p_business_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from staff_users
+    where auth_user_id = auth.uid()
+      and business_id  = p_business_id
+      and role         = 'owner'
+  );
+$$;
+
+revoke all on function public.is_business_owner(uuid) from public;
+grant execute on function public.is_business_owner(uuid) to authenticated, service_role;
+
 -- Staff: scoped to their own business only.
 create policy staff_select_own_business on businesses
   for select using (
     id in (select business_id from staff_users where auth_user_id = auth.uid())
   );
 
+-- Settings writes are owner-only; counter staff can read but never edit.
+create policy owner_update_own_business on businesses
+  for update
+  using (public.is_business_owner(id))
+  with check (public.is_business_owner(id));
+
 create policy staff_select_own_staff_row on staff_users
   for select using (auth_user_id = auth.uid());
+
+-- Owners see every staff row of their own business (staff management list).
+-- No write policies and no write grants for authenticated: adding/removing
+-- staff happens server-side via the service role only.
+create policy owner_select_business_staff on staff_users
+  for select using (public.is_business_owner(business_id));
 
 create policy staff_select_own_business_transactions on transactions
   for select using (
@@ -204,6 +252,7 @@ create policy customer_select_own_redemptions on redemptions
 grant usage on schema public to anon, authenticated;
 
 grant select on businesses   to anon, authenticated;
+grant update on businesses   to authenticated;  -- owners edit own settings (RLS-scoped to role = owner)
 grant select on staff_users  to authenticated;
 grant select, insert, update on transactions to authenticated;
 grant select on enrollments  to authenticated;
