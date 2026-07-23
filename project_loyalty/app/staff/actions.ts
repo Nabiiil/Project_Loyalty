@@ -151,6 +151,107 @@ export async function verifyRedemption(
   return { ok: true, valid: false, reason: raw.reason ?? 'invalid_code' }
 }
 
+export type ManualStampState =
+  | {
+      ok: true
+      currentStamps: number
+      rewardThreshold: number
+      rewardReached: boolean
+      usedToday: number
+      dailyLimit: number
+    }
+  | { ok: false; error: string }
+  | null
+
+const MANUAL_REASON_CATEGORIES = ['qr_failed', 'phone_dead', 'staff_error', 'other'] as const
+
+const MANUAL_ERROR_COPY: Record<string, string> = {
+  not_authenticated: 'You must be signed in to add a stamp.',
+  not_staff: 'No business is linked to this staff account.',
+  invalid_reason: 'Choose a reason for the manual stamp.',
+  invalid_id_kind: 'Choose how to identify the customer.',
+  customer_required: 'Enter the customer’s code or phone number.',
+  customer_not_found:
+    'No matching customer — can’t add a stamp. Ask them to scan the QR instead.',
+  ambiguous_customer:
+    'That matches more than one customer. Use their exact customer code.',
+}
+
+/**
+ * Staff (owner OR counter staff) adds a stamp manually when the QR flow can't be
+ * used. All the real work — identifying the customer, the per-staff daily limit,
+ * recording the flagged transaction, and the increment — happens inside
+ * add_manual_stamp(), called through the staff's own session so auth.uid()
+ * scopes it to their business. Inputs are parsed defensively here; the DB
+ * function is the authoritative validator and the atomic boundary.
+ */
+export async function addManualStamp(
+  _prevState: ManualStampState,
+  formData: FormData,
+): Promise<ManualStampState> {
+  const supabase = await createStaffClient()
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { ok: false, error: MANUAL_ERROR_COPY.not_authenticated }
+  }
+
+  const idKind = ((formData.get('id_kind') as string | null) ?? '').trim()
+  if (idKind !== 'phone' && idKind !== 'code') {
+    return { ok: false, error: MANUAL_ERROR_COPY.invalid_id_kind }
+  }
+
+  const identifier = ((formData.get('identifier') as string | null) ?? '').trim()
+  if (!identifier) {
+    return { ok: false, error: MANUAL_ERROR_COPY.customer_required }
+  }
+
+  const category = ((formData.get('reason_category') as string | null) ?? '').trim()
+  if (!MANUAL_REASON_CATEGORIES.includes(category as (typeof MANUAL_REASON_CATEGORIES)[number])) {
+    return { ok: false, error: MANUAL_ERROR_COPY.invalid_reason }
+  }
+
+  const note = ((formData.get('reason_note') as string | null) ?? '').trim()
+
+  const { data, error } = await supabase.rpc('add_manual_stamp', {
+    p_identifier: identifier,
+    p_id_kind: idKind,
+    p_reason_category: category,
+    p_reason_note: note || undefined,
+  })
+  if (error) {
+    console.error('add_manual_stamp error:', error)
+    return { ok: false, error: 'Something went wrong. Please try again.' }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = data as any
+  if (!raw?.ok) {
+    if (raw?.error === 'rate_limited') {
+      return {
+        ok: false,
+        error: `Daily manual-stamp limit reached (${raw.limit}). It resets tomorrow.`,
+      }
+    }
+    return { ok: false, error: MANUAL_ERROR_COPY[raw?.error] ?? 'Could not add the stamp.' }
+  }
+
+  // The customer sees the new stamp on their dashboard.
+  revalidatePath('/dashboard')
+
+  return {
+    ok: true,
+    currentStamps: raw.current_stamps,
+    rewardThreshold: raw.reward_threshold,
+    rewardReached: raw.reward_reached,
+    usedToday: raw.manual_used_today,
+    dailyLimit: raw.manual_daily_limit,
+  }
+}
+
 export type UpdateSettingsState =
   | { ok: true; rewardThreshold: number; rewardDescription: string }
   | { ok: false; error: string }

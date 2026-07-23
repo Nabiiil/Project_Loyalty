@@ -101,6 +101,18 @@ export default async function DashboardPage() {
       <div className="mx-auto max-w-sm flex flex-col gap-6">
         <DashboardHeader variant={headerVariant} />
 
+        {customerId && (
+          <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
+            <span className="text-xs text-gray-500">
+              Your code
+              <span className="block text-[11px] text-gray-400">Show this for a manual stamp</span>
+            </span>
+            <span className="font-mono text-base font-semibold tracking-widest text-gray-900">
+              {customerId.slice(0, 8).toUpperCase()}
+            </span>
+          </div>
+        )}
+
         {enrollments.length === 0 ? (
           <div className="rounded-2xl border border-gray-100 p-8 text-center flex flex-col gap-2 shadow-sm">
             <p className="text-lg font-semibold text-gray-900">No stamps yet</p>

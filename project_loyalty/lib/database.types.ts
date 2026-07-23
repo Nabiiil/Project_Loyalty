@@ -226,9 +226,12 @@ export type Database = {
           amount: number | null
           business_id: string
           created_at: string
+          created_by_staff_id: string | null
           customer_id: string | null
           expires_at: string
           id: string
+          is_manual: boolean
+          manual_reason: string | null
           qr_token: string
           scanned_at: string | null
           status: Database["public"]["Enums"]["transaction_status"]
@@ -237,9 +240,12 @@ export type Database = {
           amount?: number | null
           business_id: string
           created_at?: string
+          created_by_staff_id?: string | null
           customer_id?: string | null
           expires_at: string
           id?: string
+          is_manual?: boolean
+          manual_reason?: string | null
           qr_token: string
           scanned_at?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
@@ -248,9 +254,12 @@ export type Database = {
           amount?: number | null
           business_id?: string
           created_at?: string
+          created_by_staff_id?: string | null
           customer_id?: string | null
           expires_at?: string
           id?: string
+          is_manual?: boolean
+          manual_reason?: string | null
           qr_token?: string
           scanned_at?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
@@ -261,6 +270,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_created_by_staff_id_fkey"
+            columns: ["created_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_users"
             referencedColumns: ["id"]
           },
           {
@@ -277,6 +293,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_manual_stamp: {
+        Args: {
+          p_id_kind: string
+          p_identifier: string
+          p_reason_category: string
+          p_reason_note?: string
+          p_staff_auth_user_id?: string
+        }
+        Returns: Json
+      }
       create_redemption: {
         Args: {
           p_customer_id: string
@@ -286,6 +312,10 @@ export type Database = {
         Returns: Json
       }
       gen_redemption_code: { Args: { p_len?: number }; Returns: string }
+      increment_enrollment_stamp: {
+        Args: { p_business_id: string; p_customer_id: string }
+        Returns: { current_stamps: number; enrollment_id: string }[]
+      }
       is_business_owner: { Args: { p_business_id: string }; Returns: boolean }
       scan_transaction: {
         Args: {
