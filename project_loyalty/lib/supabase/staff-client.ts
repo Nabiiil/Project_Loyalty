@@ -1,6 +1,7 @@
 'use client'
 
 import { createClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 
 const STAFF_COOKIE_PREFIX = 'staff_'
 
@@ -29,7 +30,7 @@ const staffCookieStorage = {
   },
 }
 
-let _client: ReturnType<typeof createClient> | null = null
+let _client: ReturnType<typeof createClient<Database>> | null = null
 
 /**
  * Browser-side staff Supabase client (login, sign-out). One module-level
@@ -39,7 +40,7 @@ let _client: ReturnType<typeof createClient> | null = null
  */
 export function getStaffClient() {
   if (!_client) {
-    _client = createClient(
+    _client = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {

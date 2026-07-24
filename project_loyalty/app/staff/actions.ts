@@ -16,6 +16,8 @@ export type CreateTransactionState =
       scanUrl: string
       amount: number | null
       expiresAt: string
+      transactionId: string
+      businessId: string
     }
   | { ok: false; error: string }
 
@@ -79,15 +81,20 @@ export async function createTransaction(
   })
 
   // 5. Record a pending transaction. The signed token is the qr_token; the DB
-  //    enforces single-use later by flipping status to 'scanned'.
-  const { error: insertError } = await supabase.from('transactions').insert({
-    business_id: staff.business_id,
-    qr_token: token,
-    amount,
-    status: 'pending',
-    expires_at: expiresAt,
-  })
-  if (insertError) {
+  //    enforces single-use later by flipping status to 'scanned'. The returned
+  //    id lets the staff screen watch this exact row for live confirmation.
+  const { data: inserted, error: insertError } = await supabase
+    .from('transactions')
+    .insert({
+      business_id: staff.business_id,
+      qr_token: token,
+      amount,
+      status: 'pending',
+      expires_at: expiresAt,
+    })
+    .select('id')
+    .single()
+  if (insertError || !inserted) {
     return { ok: false, error: 'Could not create the transaction. Please try again.' }
   }
 
@@ -99,7 +106,15 @@ export async function createTransaction(
     width: 320,
   })
 
-  return { ok: true, qrDataUrl, scanUrl, amount, expiresAt }
+  return {
+    ok: true,
+    qrDataUrl,
+    scanUrl,
+    amount,
+    expiresAt,
+    transactionId: inserted.id,
+    businessId: staff.business_id,
+  }
 }
 
 export type VerifyRedemptionState =

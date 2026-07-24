@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import { addManualStamp } from '../actions'
 
 const REASONS = [
@@ -16,18 +16,33 @@ const REASONS = [
  * it never competes with the primary QR flow above it. Expanding reveals the
  * identify-the-customer + reason form. The QR scan is always the happy path;
  * this is the fallback for when it can't be used.
+ *
+ * Open state is controlled by the parent so the scan-confirmation timeout can
+ * open this form directly ("no scan arrived → add the stamp manually").
  */
-export function ManualStampForm() {
-  const [open, setOpen] = useState(false)
+export function ManualStampForm({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   const [idKind, setIdKind] = useState<'code' | 'phone'>('code')
   const [state, formAction, pending] = useActionState(addManualStamp, null)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  // When opened from elsewhere (the confirmation timeout), bring it into view —
+  // it sits below the QR, off-screen on a small tablet.
+  useEffect(() => {
+    if (open) panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [open])
 
   if (!open) {
     return (
       <div className="flex justify-center border-t border-zinc-100 pt-5 dark:border-zinc-800">
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => onOpenChange(true)}
           className="text-sm font-medium text-zinc-500 underline underline-offset-2 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
         >
           Add stamp manually
@@ -37,14 +52,17 @@ export function ManualStampForm() {
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-dashed border-zinc-300 p-4 dark:border-zinc-700">
+    <div
+      ref={panelRef}
+      className="flex flex-col gap-4 rounded-xl border border-dashed border-zinc-300 p-4 dark:border-zinc-700"
+    >
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
           Add stamp manually
         </h2>
         <button
           type="button"
-          onClick={() => setOpen(false)}
+          onClick={() => onOpenChange(false)}
           className="text-sm text-zinc-400 underline underline-offset-2"
         >
           Cancel

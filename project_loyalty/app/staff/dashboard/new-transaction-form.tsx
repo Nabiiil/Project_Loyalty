@@ -3,8 +3,9 @@
 import Image from 'next/image'
 import { useActionState } from 'react'
 import { createTransaction } from '../actions'
+import { ScanConfirmation } from './scan-confirmation'
 
-export function NewTransactionForm() {
+export function NewTransactionForm({ onRequestManual }: { onRequestManual: () => void }) {
   const [state, formAction, pending] = useActionState(createTransaction, null)
 
   return (
@@ -63,6 +64,13 @@ export function NewTransactionForm() {
           <p className="text-center text-xs text-zinc-500">
             Expires {new Date(state.expiresAt).toLocaleTimeString()}
           </p>
+          {/* key resets the confirmation lifecycle for every freshly generated QR. */}
+          <ScanConfirmation
+            key={state.transactionId}
+            transactionId={state.transactionId}
+            businessId={state.businessId}
+            onRequestManual={onRequestManual}
+          />
           {/* DEV ONLY — remove before deploying */}
           <a
             href={state.scanUrl}
