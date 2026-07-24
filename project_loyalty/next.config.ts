@@ -13,7 +13,9 @@ function devOrigins(): string[] {
   }
 }
 
-const nextConfig: NextConfig = {
+const nextConfig: NextConfig = {turbopack: {
+    root: __dirname,
+  },
   allowedDevOrigins: devOrigins(),
 };
 
