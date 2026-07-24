@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -44,24 +39,33 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string
+          earning_mode: Database["public"]["Enums"]["earning_mode"]
           id: string
           name: string
+          points_per_unit: number | null
+          reward_description: string
           reward_threshold: number
         }
         Insert: {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          earning_mode?: Database["public"]["Enums"]["earning_mode"]
           id?: string
           name: string
+          points_per_unit?: number | null
+          reward_description?: string
           reward_threshold?: number
         }
         Update: {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          earning_mode?: Database["public"]["Enums"]["earning_mode"]
           id?: string
           name?: string
+          points_per_unit?: number | null
+          reward_description?: string
           reward_threshold?: number
         }
         Relationships: []
@@ -142,6 +146,7 @@ export type Database = {
         Row: {
           created_at: string
           enrollment_id: string
+          expires_at: string | null
           id: string
           redemption_code: string
           status: Database["public"]["Enums"]["redemption_status"]
@@ -150,6 +155,7 @@ export type Database = {
         Insert: {
           created_at?: string
           enrollment_id: string
+          expires_at?: string | null
           id?: string
           redemption_code: string
           status?: Database["public"]["Enums"]["redemption_status"]
@@ -158,6 +164,7 @@ export type Database = {
         Update: {
           created_at?: string
           enrollment_id?: string
+          expires_at?: string | null
           id?: string
           redemption_code?: string
           status?: Database["public"]["Enums"]["redemption_status"]
@@ -180,6 +187,7 @@ export type Database = {
           created_at: string
           id: string
           name: string | null
+          role: Database["public"]["Enums"]["staff_role"]
         }
         Insert: {
           auth_user_id: string
@@ -187,6 +195,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string | null
+          role?: Database["public"]["Enums"]["staff_role"]
         }
         Update: {
           auth_user_id?: string
@@ -194,6 +203,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string | null
+          role?: Database["public"]["Enums"]["staff_role"]
         }
         Relationships: [
           {
@@ -261,11 +271,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_redemption: {
+        Args: {
+          p_customer_id: string
+          p_enrollment_id: string
+          p_ttl_seconds?: number
+        }
+        Returns: Json
+      }
+      gen_redemption_code: { Args: { p_len?: number }; Returns: string }
+      is_business_owner: { Args: { p_business_id: string }; Returns: boolean }
+      scan_transaction: {
+        Args: {
+          p_auth_user_id?: string
+          p_device_token?: string
+          p_qr_token: string
+        }
+        Returns: Json
+      }
+      update_business_settings: {
+        Args: {
+          p_earning_mode?: string
+          p_reward_description: string
+          p_reward_threshold: number
+          p_staff_auth_user_id?: string
+        }
+        Returns: Json
+      }
+      verify_redemption: {
+        Args: { p_code: string; p_staff_auth_user_id?: string }
+        Returns: Json
+      }
     }
     Enums: {
+      earning_mode: "per_transaction" | "per_amount"
       redemption_status: "pending" | "verified"
       signup_source: "qr_scan" | "direct_signup" | "business_referral"
+      staff_role: "owner" | "staff"
       transaction_status: "pending" | "scanned" | "expired"
     }
     CompositeTypes: {
@@ -397,9 +439,12 @@ export const Constants = {
   },
   public: {
     Enums: {
+      earning_mode: ["per_transaction", "per_amount"],
       redemption_status: ["pending", "verified"],
       signup_source: ["qr_scan", "direct_signup", "business_referral"],
+      staff_role: ["owner", "staff"],
       transaction_status: ["pending", "scanned", "expired"],
     },
   },
 } as const
+

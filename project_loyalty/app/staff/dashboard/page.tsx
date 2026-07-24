@@ -1,48 +1,20 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { NewTransactionForm } from './new-transaction-form'
+import { TransactionScreen } from './transaction-screen'
 
-export default async function StaffDashboardPage() {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    redirect('/staff/login')
-  }
-
-  // Confirm this auth user is actually staff and load their business.
-  const { data: staff } = await supabase
-    .from('staff_users')
-    .select('name, business_id')
-    .eq('auth_user_id', user.id)
-    .single()
-  if (!staff) {
-    redirect('/staff/login')
-  }
-
-  const { data: business } = await supabase
-    .from('businesses')
-    .select('name')
-    .eq('id', staff.business_id)
-    .single()
-
-  const businessName = business?.name ?? 'your business'
-
+/**
+ * Screen 1 — New transaction (default landing after staff login).
+ * The high-frequency screen: staff taps once and a large transaction QR fills
+ * the view for the customer to scan, then a Realtime confirmation appears the
+ * moment the scan lands. The manual-stamp fallback sits below, collapsed and
+ * de-emphasized, so it never competes with the QR flow. Auth is handled by the
+ * segment layout; every action re-checks staff server-side.
+ */
+export default function StaffNewTransactionPage() {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-5 py-10">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white">
-          New transaction
-        </h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          {businessName}
-          {staff.name ? ` · ${staff.name}` : ''}
-        </p>
-      </header>
-
-      <NewTransactionForm />
-    </main>
+    <section className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white">
+        New transaction
+      </h1>
+      <TransactionScreen />
+    </section>
   )
 }
