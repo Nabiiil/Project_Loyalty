@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { EnrollmentCard } from './EnrollmentCard'
 import { DashboardHeader } from './DashboardHeader'
 import { SignupInvite } from '@/components/SignupInvite'
+import { customerDashboardOutcome } from '@/lib/auth-guards'
 
 export type EnrollmentRow = {
   id: string
@@ -62,7 +63,16 @@ export default async function DashboardPage() {
       ? ({ kind: 'anon' } as const)
       : ({ kind: 'none' } as const)
 
-  if (!user && !deviceToken) {
+  // Reverse of the staff guard: an authenticated user who is not a customer
+  // (no enrollments / no customer row) is rendered here, never redirected — so
+  // this page can't mirror the staff login loop. See lib/auth-guards.
+  const outcome = customerDashboardOutcome({
+    hasSession: !!user,
+    hasDeviceToken: !!deviceToken,
+    hasEnrollments: enrollments.length > 0,
+  })
+
+  if (outcome === 'render-signed-out') {
     return (
       <main className="min-h-dvh bg-white px-5 py-10">
         <div className="mx-auto max-w-sm flex flex-col gap-6">
@@ -113,7 +123,7 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {enrollments.length === 0 ? (
+        {outcome === 'render-empty' ? (
           <div className="rounded-2xl border border-gray-100 p-8 text-center flex flex-col gap-2 shadow-sm">
             <p className="text-lg font-semibold text-gray-900">No stamps yet</p>
             <p className="text-sm text-gray-500">
