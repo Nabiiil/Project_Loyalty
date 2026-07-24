@@ -16,9 +16,9 @@ type StaffRole = 'owner' | 'staff'
  * re-verify the role server-side regardless.
  */
 const MENU_ITEMS: { href: string; label: string; ownerOnly?: boolean }[] = [
-  { href: '/staff/dashboard/history', label: 'Activity', ownerOnly: true },
+  { href: '/staff/dashboard/analytics', label: 'Analytics', ownerOnly: true },
+  { href: '/staff/dashboard/history', label: 'History', ownerOnly: true },
   { href: '/staff/dashboard/settings', label: 'Settings', ownerOnly: true },
-  // { href: '/staff/dashboard/analytics', label: 'Analytics', ownerOnly: true },
 ]
 
 /**

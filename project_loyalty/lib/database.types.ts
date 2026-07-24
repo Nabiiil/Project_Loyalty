@@ -312,6 +312,20 @@ export type Database = {
         Returns: Json
       }
       gen_redemption_code: { Args: { p_len?: number }; Returns: string }
+      get_business_history: {
+        Args: {
+          p_from?: string
+          p_limit?: number
+          p_offset?: number
+          p_staff_auth_user_id?: string
+          p_to?: string
+        }
+        Returns: Json
+      }
+      get_owner_analytics: {
+        Args: { p_days?: number; p_staff_auth_user_id?: string }
+        Returns: Json
+      }
       increment_enrollment_stamp: {
         Args: { p_business_id: string; p_customer_id: string }
         Returns: { current_stamps: number; enrollment_id: string }[]
