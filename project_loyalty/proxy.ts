@@ -1,10 +1,15 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-// Import ONLY pure constants — never staff-server.ts (next/headers) or any
-// service-role/Node code, which would break the Edge Runtime build.
-import { STAFF_COOKIE_PREFIX, STAFF_AUTH_STORAGE_KEY } from '@/lib/supabase/constants'
 
-export async function middleware(request: NextRequest) {
+// Inlined, NOT imported: this file runs on the Edge, where path-alias (@/…)
+// imports fail to resolve in the Edge bundle — even a pure-constant module.
+// Keep this value identical to STAFF_COOKIE_PREFIX in lib/supabase/constants.ts
+// (the shared source of truth used by the Node/browser staff clients).
+const STAFF_COOKIE_PREFIX = 'staff_'
+
+// Next.js 16 renamed the `middleware` file convention to `proxy`; the file must
+// be proxy.ts and export a function named `proxy` (or a default export).
+export async function proxy(request: NextRequest) {
   // Supabase local sometimes ignores emailRedirectTo and sends the auth code
   // to site_url (i.e. /?code=...). Catch that and forward to the real callback.
   const { pathname, search } = new URL(request.url)
@@ -58,7 +63,7 @@ export async function middleware(request: NextRequest) {
       // Staff routes must use the same storageKey as the browser staff client
       // so GoTrue searches for 'staff-auth' in the stripped-prefix cookie list.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...(isStaffRoute ? { auth: { storageKey: STAFF_AUTH_STORAGE_KEY } as any } : {}),
+      ...(isStaffRoute ? { auth: { storageKey: 'staff-auth' } as any } : {}),
     },
   )
 
