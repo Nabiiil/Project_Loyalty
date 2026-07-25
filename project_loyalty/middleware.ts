@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { STAFF_COOKIE_PREFIX } from '@/lib/supabase/staff-server'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Supabase local sometimes ignores emailRedirectTo and sends the auth code
   // to site_url (i.e. /?code=...). Catch that and forward to the real callback.
   const { pathname, search } = new URL(request.url)
