@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { STAFF_COOKIE_PREFIX } from '@/lib/supabase/staff-server'
+// Import ONLY pure constants — never staff-server.ts (next/headers) or any
+// service-role/Node code, which would break the Edge Runtime build.
+import { STAFF_COOKIE_PREFIX, STAFF_AUTH_STORAGE_KEY } from '@/lib/supabase/constants'
 
 export async function middleware(request: NextRequest) {
   // Supabase local sometimes ignores emailRedirectTo and sends the auth code
@@ -56,7 +58,7 @@ export async function middleware(request: NextRequest) {
       // Staff routes must use the same storageKey as the browser staff client
       // so GoTrue searches for 'staff-auth' in the stripped-prefix cookie list.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...(isStaffRoute ? { auth: { storageKey: 'staff-auth' } as any } : {}),
+      ...(isStaffRoute ? { auth: { storageKey: STAFF_AUTH_STORAGE_KEY } as any } : {}),
     },
   )
 

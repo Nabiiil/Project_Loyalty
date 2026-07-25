@@ -1,9 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-
-// All staff session cookies are prefixed with this string so they never
-// share a cookie name with the customer session (which uses the default names).
-export const STAFF_COOKIE_PREFIX = 'staff_'
+import { STAFF_COOKIE_PREFIX, STAFF_AUTH_STORAGE_KEY } from './constants'
 
 export async function createStaffClient() {
   const cookieStore = await cookies()
@@ -16,7 +13,7 @@ export async function createStaffClient() {
       // 'staff-auth' in the stripped-prefix cookies (staff_staff-auth → staff-auth).
       // @supabase/ssr omits storageKey from its auth type but GoTrue still honours it.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      auth: { storageKey: 'staff-auth' } as any,
+      auth: { storageKey: STAFF_AUTH_STORAGE_KEY } as any,
       cookies: {
         getAll() {
           // Strip the prefix before handing to GoTrue so it sees normal key names.

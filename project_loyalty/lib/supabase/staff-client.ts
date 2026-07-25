@@ -2,8 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
-
-const STAFF_COOKIE_PREFIX = 'staff_'
+import { STAFF_COOKIE_PREFIX, STAFF_AUTH_STORAGE_KEY } from './constants'
 
 // Custom cookie storage adapter that physically prefixes every cookie name with
 // STAFF_COOKIE_PREFIX. This keeps staff session cookies completely separate from
@@ -49,7 +48,7 @@ export function getStaffClient() {
           // Unique storageKey → unique BroadcastChannel key ('supabase-staff-auth').
           // Without this, the customer SIGNED_IN broadcast overwrites staff_sb-*
           // cookies because both clients share the same default channel key.
-          storageKey: 'staff-auth',
+          storageKey: STAFF_AUTH_STORAGE_KEY,
           detectSessionInUrl: false,
           persistSession: true,
           autoRefreshToken: true,
