@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import { useTranslations } from '@/lib/i18n/I18nProvider'
 
 type Tab = 'email' | 'phone'
 type Step = 'input' | 'otp'
@@ -21,6 +22,8 @@ function makeClient() {
  * as a replacement.
  */
 export function EmailPhoneOtpForm() {
+  const t = useTranslations('customerAuth')
+  const tc = useTranslations('common')
   const [tab, setTab] = useState<Tab>('email')
   const [step, setStep] = useState<Step>('input')
   const [email, setEmail] = useState('')
@@ -80,17 +83,17 @@ export function EmailPhoneOtpForm() {
     <div className="flex flex-col gap-6">
       {/* Tab toggle */}
       <div className="flex rounded-lg border border-gray-200 p-1 gap-1">
-        {(['email', 'phone'] as Tab[]).map((t) => (
+        {(['email', 'phone'] as Tab[]).map((tabKey) => (
           <button
-            key={t}
+            key={tabKey}
             type="button"
-            onClick={() => { setTab(t); setStep('input'); setOtp(''); setError(null) }}
+            onClick={() => { setTab(tabKey); setStep('input'); setOtp(''); setError(null) }}
             className={[
               'flex-1 rounded-md py-2 text-sm font-medium transition-colors',
-              tab === t ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-900',
+              tab === tabKey ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-900',
             ].join(' ')}
           >
-            {t === 'email' ? 'Email' : 'Phone'}
+            {tabKey === 'email' ? tc('email') : tc('phone')}
           </button>
         ))}
       </div>
@@ -99,7 +102,7 @@ export function EmailPhoneOtpForm() {
       {tab === 'email' && step === 'input' && (
         <form onSubmit={sendEmailOtp} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
-            Email address
+            {tc('emailAddress')}
             <input
               type="email"
               value={email}
@@ -116,7 +119,7 @@ export function EmailPhoneOtpForm() {
             disabled={pending}
             className="h-14 w-full rounded-lg bg-gray-900 text-base font-semibold text-white disabled:opacity-60"
           >
-            {pending ? 'Sending…' : 'Send code'}
+            {pending ? tc('sending') : tc('sendCode')}
           </button>
         </form>
       )}
@@ -124,15 +127,17 @@ export function EmailPhoneOtpForm() {
       {/* Email — OTP */}
       {tab === 'email' && step === 'otp' && (
         <form onSubmit={verifyEmailOtp} className="flex flex-col gap-4">
-          <p className="text-sm text-gray-500">
-            We sent a 6-digit code to <strong>{email}</strong>. Check{' '}
-            <a href="http://localhost:54324" target="_blank" rel="noreferrer" className="underline">
-              Inbucket
-            </a>{' '}
-            if you&apos;re testing locally.
-          </p>
+          <p className="text-sm text-gray-500">{t('otpSentEmail', { email })}</p>
+          <a
+            href="http://localhost:54324"
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm text-gray-500 underline"
+          >
+            {t('otpTestingHint')}
+          </a>
           <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
-            Verification code
+            {tc('verificationCode')}
             <input
               type="text"
               inputMode="numeric"
@@ -150,14 +155,14 @@ export function EmailPhoneOtpForm() {
             disabled={pending}
             className="h-14 w-full rounded-lg bg-gray-900 text-base font-semibold text-white disabled:opacity-60"
           >
-            {pending ? 'Verifying…' : 'Verify code'}
+            {pending ? tc('verifying') : tc('verifyCode')}
           </button>
           <button
             type="button"
             onClick={() => { setStep('input'); setOtp(''); setError(null) }}
             className="text-sm text-gray-400 underline underline-offset-2"
           >
-            Use a different email
+            {t('useDifferentEmail')}
           </button>
         </form>
       )}
@@ -166,15 +171,16 @@ export function EmailPhoneOtpForm() {
       {tab === 'phone' && step === 'input' && (
         <form onSubmit={sendPhoneOtp} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
-            Phone number
+            {tc('phoneNumber')}
             <input
               type="tel"
               value={phone}
               onChange={e => setPhone(e.target.value)}
               required
               autoComplete="tel"
-              placeholder="+33612345678"
-              className="h-12 rounded-lg border border-gray-300 px-4 text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
+              placeholder="+212612345678"
+              dir="ltr"
+              className="h-12 rounded-lg border border-gray-300 px-4 text-base text-gray-900 text-start focus:outline-none focus:ring-2 focus:ring-gray-900"
             />
           </label>
           {error && <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
@@ -183,7 +189,7 @@ export function EmailPhoneOtpForm() {
             disabled={pending}
             className="h-14 w-full rounded-lg bg-gray-900 text-base font-semibold text-white disabled:opacity-60"
           >
-            {pending ? 'Sending…' : 'Send code'}
+            {pending ? tc('sending') : tc('sendCode')}
           </button>
         </form>
       )}
@@ -192,7 +198,7 @@ export function EmailPhoneOtpForm() {
       {tab === 'phone' && step === 'otp' && (
         <form onSubmit={verifyPhoneOtp} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
-            Verification code
+            {tc('verificationCode')}
             <input
               type="text"
               inputMode="numeric"
@@ -204,21 +210,21 @@ export function EmailPhoneOtpForm() {
               className="h-12 rounded-lg border border-gray-300 px-4 text-base text-gray-900 tracking-widest focus:outline-none focus:ring-2 focus:ring-gray-900"
             />
           </label>
-          <p className="text-sm text-gray-500">Sent to {phone}</p>
+          <p className="text-sm text-gray-500"><bdi>{t('otpSentPhone', { phone })}</bdi></p>
           {error && <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
           <button
             type="submit"
             disabled={pending}
             className="h-14 w-full rounded-lg bg-gray-900 text-base font-semibold text-white disabled:opacity-60"
           >
-            {pending ? 'Verifying…' : 'Verify code'}
+            {pending ? tc('verifying') : tc('verifyCode')}
           </button>
           <button
             type="button"
             onClick={() => { setStep('input'); setOtp(''); setError(null) }}
             className="text-sm text-gray-400 underline underline-offset-2"
           >
-            Use a different number
+            {t('useDifferentNumber')}
           </button>
         </form>
       )}

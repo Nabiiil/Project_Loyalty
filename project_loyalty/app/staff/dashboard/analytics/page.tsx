@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createStaffClient } from '@/lib/supabase/staff-server'
+import { getTranslations } from '@/lib/i18n/server'
 import { NewVsReturningChart, type DayPoint } from './NewVsReturningChart'
 
 /**
@@ -29,6 +30,7 @@ export default async function StaffAnalyticsPage({
   searchParams: Promise<{ days?: string }>
 }) {
   const supabase = await createStaffClient()
+  const t = await getTranslations('analytics')
 
   const {
     data: { user },
@@ -57,9 +59,9 @@ export default async function StaffAnalyticsPage({
   if (error || !a?.ok) {
     return (
       <section className="flex flex-col gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white">Analytics</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white">{t('title')}</h1>
         <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-          Could not load analytics. Please try again.
+          {t('loadError')}
         </p>
       </section>
     )
@@ -73,7 +75,7 @@ export default async function StaffAnalyticsPage({
   return (
     <section className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white">Analytics</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white">{t('title')}</h1>
         <div className="flex overflow-hidden rounded-lg border border-zinc-300 text-sm dark:border-zinc-700">
           {[30, 90].map((d) => (
             <Link
@@ -86,51 +88,45 @@ export default async function StaffAnalyticsPage({
                   : 'px-3 py-1.5 text-zinc-600 dark:text-zinc-300'
               }
             >
-              {d}d
+              {d}
             </Link>
           ))}
         </div>
       </div>
 
-      <p className="-mt-2 text-sm text-zinc-500">Are customers coming back? Last {days} days.</p>
+      <p className="-mt-2 text-sm text-zinc-500">{t('subtitle', { days })}</p>
 
       {/* Retention stat tiles */}
       <div className="grid grid-cols-2 gap-3">
         <StatTile
-          label="Repeat visit rate"
+          label={t('repeatRate')}
           value={a.repeat_visit_rate.toFixed(1)}
-          sub={`visits / enrolled customer / month · ${a.enrolled_customers} enrolled`}
+          sub={t('repeatRateSub', { count: a.enrolled_customers })}
         />
         <StatTile
-          label="Avg time between visits"
+          label={t('avgTime')}
           value={a.avg_days_between_visits == null ? '—' : `${a.avg_days_between_visits}`}
-          sub={a.avg_days_between_visits == null ? 'need repeat visitors' : 'days, for repeat visitors'}
+          sub={a.avg_days_between_visits == null ? t('avgTimeNeed') : t('avgTimeSub')}
         />
         <StatTile
-          label="Rewards redeemed"
+          label={t('rewardsRedeemed')}
           value={`${a.redemptions_verified} / ${a.redemptions_issued}`}
-          sub={
-            verifyPct == null
-              ? 'issued → verified'
-              : `verified of issued · ${verifyPct}%`
-          }
+          sub={verifyPct == null ? t('rewardsSubEmpty') : t('rewardsSub', { pct: verifyPct })}
         />
         <StatTile
-          label="Enrolled customers"
+          label={t('enrolled')}
           value={`${a.enrolled_customers}`}
-          sub="total loyalty members"
+          sub={t('enrolledSub')}
         />
       </div>
 
       {/* New vs returning over time */}
       <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-        <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-          New vs returning customers
-        </h2>
+        <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{t('chartTitle')}</h2>
         {a.new_vs_returning.some((p) => p.new + p.returning > 0) ? (
           <NewVsReturningChart series={a.new_vs_returning} />
         ) : (
-          <p className="py-6 text-center text-sm text-zinc-400">No visits in this window yet.</p>
+          <p className="py-6 text-center text-sm text-zinc-400">{t('noVisits')}</p>
         )}
       </div>
     </section>

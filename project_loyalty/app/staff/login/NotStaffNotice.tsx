@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { getStaffClient } from '@/lib/supabase/staff-client'
+import { useTranslations } from '@/lib/i18n/I18nProvider'
 
 /**
  * Shown on /staff/login when the visitor IS authenticated (a staff-namespace
@@ -11,6 +12,8 @@ import { getStaffClient } from '@/lib/supabase/staff-client'
  * that clears the staff session so the plain login form returns.
  */
 export function NotStaffNotice() {
+  const t = useTranslations('staffAuth')
+  const tc = useTranslations('common')
   const [signingOut, setSigningOut] = useState(false)
 
   async function handleSignOut() {
@@ -26,20 +29,15 @@ export function NotStaffNotice() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div
-        role="alert"
-        className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800"
-      >
-        This account is not registered as staff for any business. If you’re a
-        customer, head to your dashboard. If you think this is a mistake, ask the
-        business owner to add your login.
+      <div role="alert" className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        {t('notStaffMessage')}
       </div>
 
       <a
         href="/dashboard"
         className="flex h-12 items-center justify-center rounded-lg bg-gray-900 text-sm font-semibold text-white"
       >
-        Go to my customer dashboard
+        {t('goToCustomerDashboard')}
       </a>
 
       <button
@@ -48,7 +46,7 @@ export function NotStaffNotice() {
         disabled={signingOut}
         className="h-12 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 disabled:opacity-60"
       >
-        {signingOut ? 'Signing out…' : 'Sign out'}
+        {signingOut ? t('signingOut') : tc('signOut')}
       </button>
     </div>
   )

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { revealRedemptionCode, type RevealState } from './actions'
+import { useTranslations, useLocale } from '@/lib/i18n/I18nProvider'
+import { formatTime } from '@/lib/i18n/format'
 
 /**
  * Shown on a reward-ready enrollment card. Anonymous customers are pushed
@@ -15,13 +17,16 @@ export function RewardClaim({
   enrollmentId: string
   isClaimed: boolean
 }) {
+  const t = useTranslations('reward')
+
   if (!isClaimed) {
     return (
       <a
         href="/signup"
-        className="flex h-12 items-center justify-center rounded-lg bg-gray-900 text-sm font-semibold text-white"
+        className="flex h-12 items-center justify-center gap-2 rounded-lg bg-gray-900 text-sm font-semibold text-white"
       >
-        Create an account to claim →
+        {t('claimCta')}
+        <span aria-hidden className="rtl:rotate-180">→</span>
       </a>
     )
   }
@@ -30,6 +35,8 @@ export function RewardClaim({
 }
 
 function RedemptionCode({ enrollmentId }: { enrollmentId: string }) {
+  const t = useTranslations('reward')
+  const locale = useLocale()
   const [state, setState] = useState<RevealState | null>(null)
 
   useEffect(() => {
@@ -45,7 +52,7 @@ function RedemptionCode({ enrollmentId }: { enrollmentId: string }) {
   if (!state) {
     return (
       <div className="flex h-12 items-center justify-center rounded-lg bg-green-50 text-sm text-green-700">
-        Getting your code…
+        {t('gettingCode')}
       </div>
     )
   }
@@ -53,7 +60,7 @@ function RedemptionCode({ enrollmentId }: { enrollmentId: string }) {
   if (!state.ok) {
     return (
       <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-        Couldn&apos;t generate your reward code. Please refresh and try again.
+        {t('codeError')}
       </p>
     )
   }
@@ -61,14 +68,12 @@ function RedemptionCode({ enrollmentId }: { enrollmentId: string }) {
   return (
     <div className="flex flex-col items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-4">
       <p className="text-xs font-medium uppercase tracking-widest text-green-700">
-        Show this code to staff
+        {t('showToStaff')}
       </p>
-      <p className="font-mono text-3xl font-bold tracking-[0.3em] text-green-900">
-        {state.code}
-      </p>
+      <p className="font-mono text-3xl font-bold tracking-[0.3em] text-green-900">{state.code}</p>
       {state.expiresAt && (
         <p className="text-xs text-green-700">
-          Expires {new Date(state.expiresAt).toLocaleTimeString()}
+          {t('expiresAt', { time: formatTime(state.expiresAt, locale) })}
         </p>
       )}
     </div>

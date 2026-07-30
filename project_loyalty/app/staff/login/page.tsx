@@ -1,11 +1,14 @@
 import { redirect } from 'next/navigation'
 import { createStaffClient } from '@/lib/supabase/staff-server'
 import { staffLoginOutcome } from '@/lib/auth-guards'
+import { getTranslations } from '@/lib/i18n/server'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { LoginForm } from './LoginForm'
 import { NotStaffNotice } from './NotStaffNotice'
 
 export default async function StaffLoginPage() {
   const supabase = await createStaffClient()
+  const t = await getTranslations('staffAuth')
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -29,17 +32,20 @@ export default async function StaffLoginPage() {
   }
 
   return (
-    <main className="min-h-dvh flex items-center justify-center bg-white px-6">
-      <div className="w-full max-w-sm flex flex-col gap-8">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Staff login</h1>
-          <p className="text-sm text-gray-500">
-            {outcome === 'show-not-staff'
-              ? 'You’re signed in, but this account isn’t staff.'
-              : 'Sign in to access the dashboard.'}
-          </p>
+    <main className="min-h-dvh flex flex-col bg-white">
+      <div className="flex justify-end p-4">
+        <LanguageSwitcher />
+      </div>
+      <div className="flex flex-1 items-center justify-center px-6 pb-10">
+        <div className="w-full max-w-sm flex flex-col gap-8">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">{t('title')}</h1>
+            <p className="text-sm text-gray-500">
+              {outcome === 'show-not-staff' ? t('subtitleNotStaff') : t('subtitleDefault')}
+            </p>
+          </div>
+          {outcome === 'show-not-staff' ? <NotStaffNotice /> : <LoginForm />}
         </div>
-        {outcome === 'show-not-staff' ? <NotStaffNotice /> : <LoginForm />}
       </div>
     </main>
   )

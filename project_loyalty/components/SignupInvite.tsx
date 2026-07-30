@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { SignupDrawer } from './SignupDrawer'
+import { useTranslations } from '@/lib/i18n/I18nProvider'
 
 /**
  * Persistent signup affordance shown on every customer screen for
@@ -19,6 +20,7 @@ export function SignupInvite() {
   // undefined = still deciding (render nothing); true = show; false = hide.
   const [show, setShow] = useState<boolean | undefined>(undefined)
   const [open, setOpen] = useState(false)
+  const t = useTranslations('common')
 
   useEffect(() => {
     let active = true
@@ -57,7 +59,7 @@ export function SignupInvite() {
           onClick={() => setOpen(true)}
           className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white"
         >
-          Sign up
+          {t('signUp')}
         </button>
       </div>
       <SignupDrawer open={open} onClose={() => setOpen(false)} />

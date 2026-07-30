@@ -2,8 +2,11 @@
 
 import { useState } from 'react'
 import { getStaffClient } from '@/lib/supabase/staff-client'
+import { useTranslations } from '@/lib/i18n/I18nProvider'
 
 export function LoginForm() {
+  const t = useTranslations('staffAuth')
+  const tc = useTranslations('common')
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
@@ -19,7 +22,7 @@ export function LoginForm() {
     const { error: authError } = await getStaffClient().auth.signInWithPassword({ email, password })
 
     if (authError) {
-      setError('Invalid email or password.')
+      setError(t('invalidCredentials'))
       setPending(false)
       return
     }
@@ -30,7 +33,7 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
-        Email
+        {tc('email')}
         <input
           type="email"
           name="email"
@@ -41,7 +44,7 @@ export function LoginForm() {
       </label>
 
       <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
-        Password
+        {tc('password')}
         <input
           type="password"
           name="password"
@@ -62,7 +65,7 @@ export function LoginForm() {
         disabled={pending}
         className="h-14 w-full rounded-lg bg-gray-900 text-base font-semibold text-white disabled:opacity-60"
       >
-        {pending ? 'Signing in…' : 'Sign in'}
+        {pending ? t('signingIn') : tc('signIn')}
       </button>
     </form>
   )

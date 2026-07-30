@@ -3,6 +3,7 @@ import sharp from 'sharp'
 import { revalidatePath } from 'next/cache'
 import { requireOwner } from '@/lib/staff-owner'
 import { createServiceClient } from '@/lib/supabase/service'
+import { getTranslations } from '@/lib/i18n/server'
 
 /**
  * Owner-only business logo upload/removal.
@@ -51,23 +52,26 @@ function storagePathFromUrl(logoUrl: string | null, businessId: string): string 
 export async function POST(request: Request) {
   const owner = await requireOwner()
   if (!owner.ok) {
-    return NextResponse.json({ ok: false, error: owner.error }, { status: 403 })
+    return NextResponse.json(
+      { ok: false, error: (await getTranslations('errors'))(owner.error) },
+      { status: 403 },
+    )
   }
 
   let form: FormData
   try {
     form = await request.formData()
   } catch {
-    return NextResponse.json({ ok: false, error: 'Invalid upload.' }, { status: 400 })
+    return NextResponse.json({ ok: false, error: (await getTranslations('errors'))('logo.invalid_upload') }, { status: 400 })
   }
 
   const file = form.get('logo')
   if (!(file instanceof File) || file.size === 0) {
-    return NextResponse.json({ ok: false, error: 'Choose an image file.' }, { status: 400 })
+    return NextResponse.json({ ok: false, error: (await getTranslations('errors'))('logo.choose_file') }, { status: 400 })
   }
   if (file.size > MAX_UPLOAD_BYTES) {
     return NextResponse.json(
-      { ok: false, error: 'Image is too large (max 4 MB). Try a smaller photo.' },
+      { ok: false, error: (await getTranslations('errors'))('logo.too_large') },
       { status: 413 },
     )
   }
@@ -76,7 +80,7 @@ export async function POST(request: Request) {
   const input = Buffer.from(await file.arrayBuffer())
   if (!sniffImageType(input)) {
     return NextResponse.json(
-      { ok: false, error: 'Logo must be a PNG, JPG, or WEBP image.' },
+      { ok: false, error: (await getTranslations('errors'))('logo.wrong_type') },
       { status: 415 },
     )
   }
@@ -98,13 +102,13 @@ export async function POST(request: Request) {
     }
   } catch {
     return NextResponse.json(
-      { ok: false, error: 'That file could not be read as an image.' },
+      { ok: false, error: (await getTranslations('errors'))('logo.unreadable') },
       { status: 415 },
     )
   }
   if (!processed) {
     return NextResponse.json(
-      { ok: false, error: 'Image could not be compressed enough. Try a simpler one.' },
+      { ok: false, error: (await getTranslations('errors'))('logo.too_big_compress') },
       { status: 413 },
     )
   }
@@ -126,7 +130,7 @@ export async function POST(request: Request) {
   if (uploadError) {
     console.error('business-logo upload error:', uploadError)
     return NextResponse.json(
-      { ok: false, error: 'Could not save the logo. Please try again.' },
+      { ok: false, error: (await getTranslations('errors'))('logo.save_failed') },
       { status: 500 },
     )
   }
@@ -143,7 +147,7 @@ export async function POST(request: Request) {
     console.error('business-logo update error:', updateError)
     await service.storage.from(BUCKET).remove([path])
     return NextResponse.json(
-      { ok: false, error: 'Could not save the logo. Please try again.' },
+      { ok: false, error: (await getTranslations('errors'))('logo.save_failed') },
       { status: 500 },
     )
   }
@@ -163,7 +167,10 @@ export async function POST(request: Request) {
 export async function DELETE() {
   const owner = await requireOwner()
   if (!owner.ok) {
-    return NextResponse.json({ ok: false, error: owner.error }, { status: 403 })
+    return NextResponse.json(
+      { ok: false, error: (await getTranslations('errors'))(owner.error) },
+      { status: 403 },
+    )
   }
 
   const service = createServiceClient()
@@ -181,7 +188,7 @@ export async function DELETE() {
   if (updateError) {
     console.error('business-logo clear error:', updateError)
     return NextResponse.json(
-      { ok: false, error: 'Could not remove the logo. Please try again.' },
+      { ok: false, error: (await getTranslations('errors'))('logo.remove_failed') },
       { status: 500 },
     )
   }

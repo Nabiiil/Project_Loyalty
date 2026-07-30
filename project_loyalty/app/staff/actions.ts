@@ -8,6 +8,7 @@ import { createStaffClient } from '@/lib/supabase/staff-server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { signQrToken } from '@/lib/qr-token'
 import { requireOwner } from '@/lib/staff-owner'
+import { getTranslations } from '@/lib/i18n/server'
 
 export type CreateTransactionState =
   | {
@@ -54,7 +55,7 @@ export async function createTransaction(
     error: authError,
   } = await supabase.auth.getUser()
   if (authError || !user) {
-    return { ok: false, error: 'You must be signed in to create a transaction.' }
+    return { ok: false, error: (await getTranslations('errors'))('not_signed_in_transaction') }
   }
 
   // 2. Resolve the staff member's business. RLS also scopes the insert below,
@@ -65,13 +66,13 @@ export async function createTransaction(
     .eq('auth_user_id', user.id)
     .single()
   if (staffError || !staff) {
-    return { ok: false, error: 'No business is linked to this staff account.' }
+    return { ok: false, error: (await getTranslations('errors'))('no_business_linked') }
   }
 
   // 3. Validate the optional amount.
   const amount = parseAmount(formData.get('amount'))
   if (amount === undefined) {
-    return { ok: false, error: 'Amount must be a number of 0 or more.' }
+    return { ok: false, error: (await getTranslations('errors'))('amount_invalid') }
   }
 
   // 4. Sign a short-lived token carrying business_id + amount + expiry.
@@ -95,7 +96,7 @@ export async function createTransaction(
     .select('id')
     .single()
   if (insertError || !inserted) {
-    return { ok: false, error: 'Could not create the transaction. Please try again.' }
+    return { ok: false, error: (await getTranslations('errors'))('transaction_failed') }
   }
 
   // 6. Render the QR the customer scans.
@@ -140,24 +141,24 @@ export async function verifyRedemption(
     error: authError,
   } = await supabase.auth.getUser()
   if (authError || !user) {
-    return { ok: false, error: 'You must be signed in to verify a reward.' }
+    return { ok: false, error: (await getTranslations('errors'))('not_signed_in_verify') }
   }
 
   const code = ((formData.get('code') as string | null) ?? '').trim().toUpperCase()
   if (!code) {
-    return { ok: false, error: 'Enter a redemption code.' }
+    return { ok: false, error: (await getTranslations('errors'))('enter_code') }
   }
 
   const { data, error } = await supabase.rpc('verify_redemption', { p_code: code })
   if (error) {
     console.error('verify_redemption error:', error)
-    return { ok: false, error: 'Something went wrong. Please try again.' }
+    return { ok: false, error: (await getTranslations('errors'))('generic') }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const raw = data as any
   if (!raw?.ok) {
-    return { ok: false, error: 'Something went wrong. Please try again.' }
+    return { ok: false, error: (await getTranslations('errors'))('generic') }
   }
 
   if (raw.valid) {
@@ -180,18 +181,6 @@ export type ManualStampState =
 
 const MANUAL_REASON_CATEGORIES = ['qr_failed', 'phone_dead', 'staff_error', 'other'] as const
 
-const MANUAL_ERROR_COPY: Record<string, string> = {
-  not_authenticated: 'You must be signed in to add a stamp.',
-  not_staff: 'No business is linked to this staff account.',
-  invalid_reason: 'Choose a reason for the manual stamp.',
-  invalid_id_kind: 'Choose how to identify the customer.',
-  customer_required: 'Enter the customer’s code or phone number.',
-  customer_not_found:
-    'No matching customer — can’t add a stamp. Ask them to scan the QR instead.',
-  ambiguous_customer:
-    'That matches more than one customer. Use their exact customer code.',
-}
-
 /**
  * Staff (owner OR counter staff) adds a stamp manually when the QR flow can't be
  * used. All the real work — identifying the customer, the per-staff daily limit,
@@ -211,22 +200,22 @@ export async function addManualStamp(
     error: authError,
   } = await supabase.auth.getUser()
   if (authError || !user) {
-    return { ok: false, error: MANUAL_ERROR_COPY.not_authenticated }
+    return { ok: false, error: (await getTranslations('errors'))('manual.not_authenticated') }
   }
 
   const idKind = ((formData.get('id_kind') as string | null) ?? '').trim()
   if (idKind !== 'phone' && idKind !== 'code') {
-    return { ok: false, error: MANUAL_ERROR_COPY.invalid_id_kind }
+    return { ok: false, error: (await getTranslations('errors'))('manual.invalid_id_kind') }
   }
 
   const identifier = ((formData.get('identifier') as string | null) ?? '').trim()
   if (!identifier) {
-    return { ok: false, error: MANUAL_ERROR_COPY.customer_required }
+    return { ok: false, error: (await getTranslations('errors'))('manual.customer_required') }
   }
 
   const category = ((formData.get('reason_category') as string | null) ?? '').trim()
   if (!MANUAL_REASON_CATEGORIES.includes(category as (typeof MANUAL_REASON_CATEGORIES)[number])) {
-    return { ok: false, error: MANUAL_ERROR_COPY.invalid_reason }
+    return { ok: false, error: (await getTranslations('errors'))('manual.invalid_reason') }
   }
 
   const note = ((formData.get('reason_note') as string | null) ?? '').trim()
@@ -239,7 +228,7 @@ export async function addManualStamp(
   })
   if (error) {
     console.error('add_manual_stamp error:', error)
-    return { ok: false, error: 'Something went wrong. Please try again.' }
+    return { ok: false, error: (await getTranslations('errors'))('generic') }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -248,10 +237,11 @@ export async function addManualStamp(
     if (raw?.error === 'rate_limited') {
       return {
         ok: false,
-        error: `Daily manual-stamp limit reached (${raw.limit}). It resets tomorrow.`,
+        error: (await getTranslations('errors'))('manual_rate_limited', { limit: raw.limit }),
       }
     }
-    return { ok: false, error: MANUAL_ERROR_COPY[raw?.error] ?? 'Could not add the stamp.' }
+    const te = await getTranslations('errors')
+    return { ok: false, error: raw?.error ? te(`manual.${raw.error}`) : te('manual_add_failed') }
   }
 
   // The customer sees the new stamp on their dashboard.
@@ -271,16 +261,6 @@ export type UpdateSettingsState =
   | { ok: true; rewardThreshold: number; rewardDescription: string }
   | { ok: false; error: string }
 
-const SETTINGS_ERROR_COPY: Record<string, string> = {
-  not_authenticated: 'You must be signed in to change settings.',
-  not_staff: 'No business is linked to this staff account.',
-  not_owner: 'Only the business owner can change settings.',
-  invalid_threshold: 'Reward threshold must be a whole number of 1 or more.',
-  invalid_description: 'Enter a short description of the reward.',
-  description_too_long: 'Reward description is too long (max 120 characters).',
-  invalid_earning_mode: 'That earning mode is not available yet.',
-}
-
 /**
  * Staff updates their business's loyalty settings. All validation and the
  * eligibility-preserving threshold change happen inside update_business_settings(),
@@ -299,18 +279,18 @@ export async function updateBusinessSettings(
     error: authError,
   } = await supabase.auth.getUser()
   if (authError || !user) {
-    return { ok: false, error: 'You must be signed in to change settings.' }
+    return { ok: false, error: (await getTranslations('errors'))('settings.not_authenticated') }
   }
 
   const rawThreshold = (formData.get('reward_threshold') as string | null) ?? ''
   const threshold = Number(rawThreshold)
   if (!Number.isInteger(threshold) || threshold < 1) {
-    return { ok: false, error: SETTINGS_ERROR_COPY.invalid_threshold }
+    return { ok: false, error: (await getTranslations('errors'))('settings.invalid_threshold') }
   }
 
   const description = ((formData.get('reward_description') as string | null) ?? '').trim()
   if (!description) {
-    return { ok: false, error: SETTINGS_ERROR_COPY.invalid_description }
+    return { ok: false, error: (await getTranslations('errors'))('settings.invalid_description') }
   }
 
   // MVP: per_transaction is the only supported mode; the DB rejects anything else.
@@ -323,13 +303,14 @@ export async function updateBusinessSettings(
   })
   if (error) {
     console.error('update_business_settings error:', error)
-    return { ok: false, error: 'Something went wrong. Please try again.' }
+    return { ok: false, error: (await getTranslations('errors'))('generic') }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const raw = data as any
   if (!raw?.ok) {
-    return { ok: false, error: SETTINGS_ERROR_COPY[raw?.error] ?? 'Could not save settings.' }
+    const te = await getTranslations('errors')
+    return { ok: false, error: raw?.error ? te(`settings.${raw.error}`) : te('settings_save_failed') }
   }
 
   // Customers see reward_description on their dashboard — make sure a change shows.
@@ -361,18 +342,18 @@ export async function updateBusinessIdentity(
 ): Promise<UpdateIdentityState> {
   const owner = await requireOwner()
   if (!owner.ok) {
-    return { ok: false, error: owner.error }
+    return { ok: false, error: (await getTranslations('errors'))(owner.error) }
   }
 
   const name = ((formData.get('name') as string | null) ?? '').trim()
   if (!name || name.length > 80) {
-    return { ok: false, error: 'Enter the business name (max 80 characters).' }
+    return { ok: false, error: (await getTranslations('errors'))('identity_name_invalid') }
   }
 
   const rawColor = ((formData.get('brand_color') as string | null) ?? '').trim().toLowerCase()
   const brandColor = rawColor === '' ? null : rawColor
   if (brandColor !== null && !/^#[0-9a-f]{6}$/.test(brandColor)) {
-    return { ok: false, error: 'Pick a valid accent color.' }
+    return { ok: false, error: (await getTranslations('errors'))('identity_color_invalid') }
   }
 
   const supabase = await createStaffClient()
@@ -384,7 +365,7 @@ export async function updateBusinessIdentity(
     .single()
   if (error) {
     console.error('updateBusinessIdentity error:', error)
-    return { ok: false, error: 'Could not save. Please try again.' }
+    return { ok: false, error: (await getTranslations('errors'))('identity_save_failed') }
   }
 
   // Customers see the name and accent on their dashboard cards.
@@ -432,22 +413,22 @@ export async function addStaffLogin(
 ): Promise<AddStaffState> {
   const owner = await requireOwner()
   if (!owner.ok) {
-    return { ok: false, error: owner.error }
+    return { ok: false, error: (await getTranslations('errors'))(owner.error) }
   }
 
   const name = ((formData.get('name') as string | null) ?? '').trim()
   if (!name || name.length > 80) {
-    return { ok: false, error: 'Enter the staff member’s name (max 80 characters).' }
+    return { ok: false, error: (await getTranslations('errors'))('staff_name_invalid') }
   }
 
   const email = ((formData.get('email') as string | null) ?? '').trim().toLowerCase()
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { ok: false, error: 'Enter a valid email address.' }
+    return { ok: false, error: (await getTranslations('errors'))('staff_email_invalid') }
   }
 
   const password = (formData.get('password') as string | null) ?? ''
   if (password.length < 8) {
-    return { ok: false, error: 'Initial password must be at least 8 characters.' }
+    return { ok: false, error: (await getTranslations('errors'))('staff_password_short') }
   }
 
   const service = createServiceClient()
@@ -462,8 +443,8 @@ export async function addStaffLogin(
     return {
       ok: false,
       error: duplicate
-        ? 'A login with that email already exists.'
-        : 'Could not create the login. Please try again.',
+        ? (await getTranslations('errors'))('staff_email_exists')
+        : (await getTranslations('errors'))('staff_create_failed'),
     }
   }
 
@@ -476,7 +457,7 @@ export async function addStaffLogin(
   if (insertError) {
     // Don't leave an orphaned auth user that belongs to no business.
     await service.auth.admin.deleteUser(created.user.id)
-    return { ok: false, error: 'Could not create the login. Please try again.' }
+    return { ok: false, error: (await getTranslations('errors'))('staff_create_failed') }
   }
 
   revalidatePath('/staff/dashboard/settings')
@@ -501,12 +482,12 @@ export async function removeStaffLogin(
 ): Promise<RemoveStaffState> {
   const owner = await requireOwner()
   if (!owner.ok) {
-    return { ok: false, error: owner.error }
+    return { ok: false, error: (await getTranslations('errors'))(owner.error) }
   }
 
   const staffId = ((formData.get('staff_id') as string | null) ?? '').trim()
   if (!staffId) {
-    return { ok: false, error: 'No staff member selected.' }
+    return { ok: false, error: (await getTranslations('errors'))('staff_none_selected') }
   }
 
   const service = createServiceClient()
@@ -519,17 +500,17 @@ export async function removeStaffLogin(
 
   // Fail closed on anything that isn't a plain staff login of this business.
   if (!target || target.business_id !== owner.businessId) {
-    return { ok: false, error: 'That staff member was not found.' }
+    return { ok: false, error: (await getTranslations('errors'))('staff_not_found') }
   }
   if (target.role === 'owner') {
-    return { ok: false, error: 'The owner login cannot be removed.' }
+    return { ok: false, error: (await getTranslations('errors'))('staff_owner_cannot_remove') }
   }
 
   const { error: deleteError } = await service.auth.admin.deleteUser(target.auth_user_id)
   if (deleteError) {
-    return { ok: false, error: 'Could not remove the login. Please try again.' }
+    return { ok: false, error: (await getTranslations('errors'))('staff_remove_failed') }
   }
 
   revalidatePath('/staff/dashboard/settings')
-  return { ok: true, name: target.name ?? 'Staff member' }
+  return { ok: true, name: target.name ?? (await getTranslations('staff'))('staffMember') }
 }

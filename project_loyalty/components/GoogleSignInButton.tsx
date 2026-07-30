@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import { useTranslations } from '@/lib/i18n/I18nProvider'
 
 /**
  * "Continue with Google" one-tap option, shared by the signup drawer and the
@@ -15,6 +16,7 @@ import { createBrowserClient } from '@supabase/ssr'
 export function GoogleSignInButton() {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const t = useTranslations('common')
 
   async function signIn() {
     setError(null)
@@ -44,7 +46,7 @@ export function GoogleSignInButton() {
         className="flex h-14 w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white text-base font-semibold text-gray-900 disabled:opacity-60"
       >
         <GoogleGlyph />
-        {pending ? 'Connecting…' : 'Continue with Google'}
+        {pending ? t('connecting') : t('continueWithGoogle')}
       </button>
       {error && (
         <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">

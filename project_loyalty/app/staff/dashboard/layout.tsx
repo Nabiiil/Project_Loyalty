@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createStaffClient } from '@/lib/supabase/staff-server'
+import { getTranslations } from '@/lib/i18n/server'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { StaffNav } from './StaffNav'
 import { StaffMenu } from './StaffMenu'
 
@@ -14,6 +16,7 @@ export default async function StaffDashboardLayout({
   children: React.ReactNode
 }) {
   const supabase = await createStaffClient()
+  const t = await getTranslations('staff')
 
   const {
     data: { user },
@@ -38,21 +41,24 @@ export default async function StaffDashboardLayout({
     .eq('id', staff.business_id)
     .single()
 
-  const businessName = business?.name ?? 'your business'
+  const businessName = business?.name ?? t('yourBusiness')
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-5 py-8">
       <header className="flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          {/* Everyone gets the menu (it holds the account info + sign-out);
-              owner-only entries like Settings are filtered inside it. That
-              filtering is UX only — the settings page and every owner action
-              re-verify the role server-side. */}
-          <StaffMenu name={staff.name} role={staff.role} />
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            {businessName}
-            {staff.name ? ` · ${staff.name}` : ''}
-          </p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            {/* Everyone gets the menu (it holds the account info + sign-out);
+                owner-only entries like Settings are filtered inside it. That
+                filtering is UX only — the settings page and every owner action
+                re-verify the role server-side. */}
+            <StaffMenu name={staff.name} role={staff.role} />
+            <p className="truncate text-sm text-zinc-600 dark:text-zinc-400">
+              {businessName}
+              {staff.name ? ` · ${staff.name}` : ''}
+            </p>
+          </div>
+          <LanguageSwitcher />
         </div>
         <StaffNav />
       </header>

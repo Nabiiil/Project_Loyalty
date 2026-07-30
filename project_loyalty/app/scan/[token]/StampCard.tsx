@@ -1,6 +1,7 @@
 'use client'
 
 import { SignupInvite } from '@/components/SignupInvite'
+import { useTranslations } from '@/lib/i18n/I18nProvider'
 
 export type ScanResult =
   | {
@@ -17,14 +18,14 @@ export type ScanResult =
     }
   | { ok: false; error: string }
 
-const ERROR_COPY: Record<string, string> = {
-  already_scanned: 'This QR code has already been scanned.',
-  token_expired: 'This QR code has expired — ask for a new one.',
-  invalid_token: 'This QR code is not valid.',
-  invalid_signature: 'This QR code is not valid.',
-  customer_not_found: 'Account not found. Please sign in again.',
-  server_error: 'Something went wrong. Please try again.',
-}
+const KNOWN_ERRORS = new Set([
+  'already_scanned',
+  'token_expired',
+  'invalid_token',
+  'invalid_signature',
+  'customer_not_found',
+  'server_error',
+])
 
 type Props = {
   result: ScanResult
@@ -33,13 +34,15 @@ type Props = {
 }
 
 export function StampCard({ result, businessName, rewardDescription }: Props) {
+  const t = useTranslations('scan')
+
   if (!result.ok) {
-    const message = ERROR_COPY[result.error] ?? ERROR_COPY.server_error
+    const code = KNOWN_ERRORS.has(result.error) ? result.error : 'server_error'
     return (
       <main className="min-h-dvh flex items-center justify-center bg-white px-6">
         <div className="w-full max-w-xs text-center space-y-4">
           <span className="text-5xl" aria-hidden>⚠️</span>
-          <p className="text-lg font-medium text-gray-800">{message}</p>
+          <p className="text-lg font-medium text-gray-800">{t(`errors.${code}`)}</p>
         </div>
       </main>
     )
@@ -64,11 +67,11 @@ export function StampCard({ result, businessName, rewardDescription }: Props) {
           <>
             <span className="text-6xl" aria-hidden>🎉</span>
             <div className="space-y-1">
-              <h1 className="text-3xl font-bold text-gray-900">Free reward!</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('freeReward')}</h1>
               {rewardDescription && (
                 <p className="text-lg font-semibold text-gray-900">{rewardDescription}</p>
               )}
-              <p className="text-gray-500">Show this screen to collect your reward.</p>
+              <p className="text-gray-500">{t('showToCollect')}</p>
             </div>
           </>
         ) : (
@@ -80,13 +83,14 @@ export function StampCard({ result, businessName, rewardDescription }: Props) {
               ✓
             </span>
             <div className="space-y-1">
-              <h1 className="text-3xl font-bold text-gray-900">Stamp added!</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('stampAdded')}</h1>
               <p className="text-gray-500">
-                {stampsLeft === 1 ? '1 more stamp to go' : `${stampsLeft} more stamps to go`}
+                {stampsLeft === 1 ? t('moreToGoOne') : t('moreToGoOther', { count: stampsLeft })}
               </p>
               {rewardDescription && (
                 <p className="text-sm text-gray-500">
-                  toward <span className="font-semibold text-gray-900">{rewardDescription}</span>
+                  {t('towardPrefix')}{' '}
+                  <span className="font-semibold text-gray-900">{rewardDescription}</span>
                 </p>
               )}
             </div>
@@ -95,12 +99,12 @@ export function StampCard({ result, businessName, rewardDescription }: Props) {
 
         <StampGrid current={currentStamps} total={rewardThreshold} />
 
-        <p className="text-sm text-gray-400" aria-label="stamp count">
+        <p className="text-sm text-gray-400" aria-label={t('stampCountAria')}>
           {currentStamps} / {rewardThreshold}
         </p>
 
         <a href="/dashboard" className="text-sm text-gray-400 underline underline-offset-2">
-          View all my cards
+          {t('viewAllCards')}
         </a>
       </div>
       </div>

@@ -22,7 +22,8 @@ export async function requireOwner(): Promise<OwnerCheck> {
     error: authError,
   } = await supabase.auth.getUser()
   if (authError || !user) {
-    return { ok: false, error: 'You must be signed in as the business owner.' }
+    // Returns an error CODE (translated by callers via getTranslations('errors')).
+    return { ok: false, error: 'owner_required_signin' }
   }
 
   const { data: staff } = await supabase
@@ -31,7 +32,7 @@ export async function requireOwner(): Promise<OwnerCheck> {
     .eq('auth_user_id', user.id)
     .single()
   if (!staff || staff.role !== 'owner') {
-    return { ok: false, error: 'Only the business owner can do this.' }
+    return { ok: false, error: 'owner_required' }
   }
 
   return { ok: true, staffId: staff.id, businessId: staff.business_id }

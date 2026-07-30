@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useTranslations } from '@/lib/i18n/I18nProvider'
 
 const TABS = [
-  { href: '/staff/dashboard', label: 'New transaction' },
-  { href: '/staff/dashboard/verify', label: 'Verify reward' },
+  { href: '/staff/dashboard', key: 'newTransaction' },
+  { href: '/staff/dashboard/verify', key: 'verifyReward' },
 ] as const
 
 /**
@@ -14,10 +15,11 @@ const TABS = [
  * deliberately distinct actions so staff don't pick the wrong one under pressure.
  */
 export function StaffNav() {
+  const t = useTranslations('staff')
   const pathname = usePathname()
 
   return (
-    <nav aria-label="Staff actions" className="grid grid-cols-2 gap-2">
+    <nav aria-label={t('staffActions')} className="grid grid-cols-2 gap-2">
       {TABS.map((tab) => {
         const active = pathname === tab.href
         return (
@@ -31,7 +33,7 @@ export function StaffNav() {
                 : 'flex h-14 items-center justify-center rounded-lg border border-zinc-300 text-base font-semibold text-zinc-700 dark:border-zinc-700 dark:text-zinc-300'
             }
           >
-            {tab.label}
+            {t(tab.key)}
           </Link>
         )
       })}

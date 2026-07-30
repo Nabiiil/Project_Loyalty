@@ -5,6 +5,7 @@ import { EnrollmentCard } from './EnrollmentCard'
 import { DashboardHeader } from './DashboardHeader'
 import { SignupInvite } from '@/components/SignupInvite'
 import { customerDashboardOutcome } from '@/lib/auth-guards'
+import { getTranslations } from '@/lib/i18n/server'
 
 export type EnrollmentRow = {
   id: string
@@ -72,6 +73,9 @@ export default async function DashboardPage() {
     hasEnrollments: enrollments.length > 0,
   })
 
+  const t = await getTranslations('customerDashboard')
+  const tc = await getTranslations('common')
+
   if (outcome === 'render-signed-out') {
     return (
       <main className="min-h-dvh bg-white px-5 py-10">
@@ -79,22 +83,20 @@ export default async function DashboardPage() {
           <DashboardHeader variant={headerVariant} />
           <div className="rounded-2xl border border-gray-100 p-8 text-center flex flex-col gap-4 shadow-sm">
             <p className="text-4xl">☕</p>
-            <p className="text-lg font-semibold text-gray-900">No stamps yet</p>
-            <p className="text-sm text-gray-500">
-              Scan a QR code at a participating business to earn your first stamp — or create an account now.
-            </p>
+            <p className="text-lg font-semibold text-gray-900">{t('emptyTitle')}</p>
+            <p className="text-sm text-gray-500">{t('coldBody')}</p>
             <div className="flex flex-col gap-2 mt-2">
               <a
                 href="/signup"
                 className="h-12 flex items-center justify-center rounded-lg bg-gray-900 text-sm font-semibold text-white"
               >
-                Create account
+                {tc('createAccount')}
               </a>
               <a
                 href="/login"
                 className="h-12 flex items-center justify-center rounded-lg border border-gray-200 text-sm font-medium text-gray-700"
               >
-                Sign in
+                {tc('signIn')}
               </a>
             </div>
           </div>
@@ -114,8 +116,8 @@ export default async function DashboardPage() {
         {customerId && (
           <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
             <span className="text-xs text-gray-500">
-              Your code
-              <span className="block text-[11px] text-gray-400">Show this for a manual stamp</span>
+              {t('yourCode')}
+              <span className="block text-[11px] text-gray-400">{t('yourCodeHint')}</span>
             </span>
             <span className="font-mono text-base font-semibold tracking-widest text-gray-900">
               {customerId.slice(0, 8).toUpperCase()}
@@ -125,10 +127,8 @@ export default async function DashboardPage() {
 
         {outcome === 'render-empty' ? (
           <div className="rounded-2xl border border-gray-100 p-8 text-center flex flex-col gap-2 shadow-sm">
-            <p className="text-lg font-semibold text-gray-900">No stamps yet</p>
-            <p className="text-sm text-gray-500">
-              Scan a QR code at a participating business to get started.
-            </p>
+            <p className="text-lg font-semibold text-gray-900">{t('emptyTitle')}</p>
+            <p className="text-sm text-gray-500">{t('emptyScan')}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">

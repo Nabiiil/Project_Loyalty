@@ -2,23 +2,23 @@
 
 import { useActionState } from 'react'
 import { verifyRedemption } from '../actions'
+import { useTranslations } from '@/lib/i18n/I18nProvider'
 
-const INVALID_COPY: Record<string, string> = {
-  invalid_code: 'No such code. Double-check the digits.',
-  wrong_business: 'This code is for a different business.',
-  not_eligible: 'Not enough stamps yet — not eligible.',
-  already_used: 'This code has already been used.',
-  expired: 'This code has expired — ask for a fresh one.',
-}
+const KNOWN_REASONS = new Set([
+  'invalid_code',
+  'wrong_business',
+  'not_eligible',
+  'already_used',
+  'expired',
+])
 
 export function VerifyRewardForm() {
+  const t = useTranslations('verify')
   const [state, formAction, pending] = useActionState(verifyRedemption, null)
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Enter the code the customer shows you.
-      </p>
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">{t('enterCode')}</p>
 
       <form action={formAction} className="flex flex-col gap-4">
         <input
@@ -36,7 +36,7 @@ export function VerifyRewardForm() {
           disabled={pending}
           className="h-16 w-full rounded-lg bg-black text-lg font-semibold text-white disabled:opacity-60 dark:bg-white dark:text-black"
         >
-          {pending ? 'Checking…' : 'Verify code'}
+          {pending ? t('checking') : t('verifyCode')}
         </button>
       </form>
 
@@ -53,10 +53,10 @@ export function VerifyRewardForm() {
         <div className="flex flex-col items-center gap-1 rounded-lg border border-green-300 bg-green-50 px-4 py-6 text-center dark:border-green-800 dark:bg-green-950">
           <span className="text-4xl" aria-hidden>✅</span>
           <p className="text-lg font-bold text-green-800 dark:text-green-300">
-            Valid — give the reward
+            {t('validGiveReward')}
           </p>
           <p className="text-sm text-green-700 dark:text-green-400">
-            {state.businessName} · stamp card reset
+            {state.businessName} · {t('stampCardReset')}
           </p>
         </div>
       )}
@@ -64,9 +64,9 @@ export function VerifyRewardForm() {
       {state && state.ok && !state.valid && (
         <div className="flex flex-col items-center gap-1 rounded-lg border border-red-300 bg-red-50 px-4 py-6 text-center dark:border-red-800 dark:bg-red-950">
           <span className="text-4xl" aria-hidden>⛔</span>
-          <p className="text-lg font-bold text-red-800 dark:text-red-300">Not valid</p>
+          <p className="text-lg font-bold text-red-800 dark:text-red-300">{t('notValid')}</p>
           <p className="text-sm text-red-700 dark:text-red-400">
-            {INVALID_COPY[state.reason] ?? 'This code cannot be redeemed.'}
+            {KNOWN_REASONS.has(state.reason) ? t(`reason.${state.reason}`) : t('cannotRedeem')}
           </p>
         </div>
       )}

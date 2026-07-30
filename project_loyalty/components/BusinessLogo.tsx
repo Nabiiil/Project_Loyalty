@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from '@/lib/i18n/I18nProvider'
 
 function initialsFrom(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean)
@@ -30,6 +31,7 @@ export function BusinessLogo({
   // logo gets a fresh chance without any effect-based reset.
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
   const failed = logoUrl !== null && failedUrl === logoUrl
+  const t = useTranslations('common')
 
   if (!logoUrl || failed) {
     return (
@@ -46,7 +48,7 @@ export function BusinessLogo({
     // eslint-disable-next-line @next/next/no-img-element -- tiny CDN-cached logo at fixed display size; next/image would only add remote-domain config
     <img
       src={logoUrl}
-      alt={`${name} logo`}
+      alt={t('logoAlt', { name })}
       loading="lazy"
       onError={() => setFailedUrl(logoUrl)}
       className={`${className} shrink-0 rounded-xl border border-gray-100 bg-white object-cover`}

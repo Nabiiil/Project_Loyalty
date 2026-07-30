@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createStaffClient } from '@/lib/supabase/staff-server'
+import { getTranslations } from '@/lib/i18n/server'
 import { IdentityForm } from './identity-form'
 import { SettingsForm } from './settings-form'
 import { StaffManager } from './staff-manager'
@@ -15,6 +16,7 @@ import { StaffManager } from './staff-manager'
  */
 export default async function StaffSettingsPage() {
   const supabase = await createStaffClient()
+  const t = await getTranslations('settings')
 
   const {
     data: { user },
@@ -54,17 +56,17 @@ export default async function StaffSettingsPage() {
   return (
     <section className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white">
-        Settings
+        {t('title')}
       </h1>
 
-      <h2 className="text-lg font-semibold text-black dark:text-white">Business identity</h2>
+      <h2 className="text-lg font-semibold text-black dark:text-white">{t('identitySection')}</h2>
       <IdentityForm
         initialName={business.name}
         initialLogoUrl={business.logo_url}
         initialBrandColor={business.brand_color}
       />
 
-      <h2 className="text-lg font-semibold text-black dark:text-white">Loyalty program</h2>
+      <h2 className="text-lg font-semibold text-black dark:text-white">{t('loyaltySection')}</h2>
       <SettingsForm
         initialThreshold={business.reward_threshold}
         initialDescription={business.reward_description}

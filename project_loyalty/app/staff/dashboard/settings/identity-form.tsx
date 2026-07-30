@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react'
 import { updateBusinessIdentity } from '../../actions'
 import { BusinessLogo } from '@/components/BusinessLogo'
+import { useTranslations } from '@/lib/i18n/I18nProvider'
 
 const DEFAULT_ACCENT = '#111827'
 
@@ -21,13 +22,11 @@ async function downscaleForUpload(file: File): Promise<Blob> {
     const ctx = canvas.getContext('2d')
     if (!ctx) return file
     ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-    // Safari may hand back PNG instead of WEBP — both are accepted server-side.
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, 'image/webp', 0.85),
     )
     return blob ?? file
   } catch {
-    // Unreadable in the browser (e.g. exotic format) — let the server decide.
     return file
   }
 }
@@ -41,6 +40,8 @@ export function IdentityForm({
   initialLogoUrl: string | null
   initialBrandColor: string | null
 }) {
+  const t = useTranslations('identity')
+  const tc = useTranslations('common')
   const [state, formAction, pending] = useActionState(updateBusinessIdentity, null)
 
   const [name, setName] = useState(initialName)
@@ -64,12 +65,12 @@ export function IdentityForm({
       const res = await fetch('/api/business-logo', { method: 'POST', body })
       const json = await res.json().catch(() => null)
       if (!res.ok || !json?.ok) {
-        setLogoError(json?.error ?? 'Upload failed. Please try again.')
+        setLogoError(json?.error ?? t('uploadFailed'))
         return
       }
       setLogoUrl(json.logoUrl)
     } catch {
-      setLogoError('Upload failed. Please try again.')
+      setLogoError(t('uploadFailed'))
     } finally {
       setLogoBusy(false)
     }
@@ -82,12 +83,12 @@ export function IdentityForm({
       const res = await fetch('/api/business-logo', { method: 'DELETE' })
       const json = await res.json().catch(() => null)
       if (!res.ok || !json?.ok) {
-        setLogoError(json?.error ?? 'Could not remove the logo. Please try again.')
+        setLogoError(json?.error ?? t('removeFailed'))
         return
       }
       setLogoUrl(null)
     } catch {
-      setLogoError('Could not remove the logo. Please try again.')
+      setLogoError(t('removeFailed'))
     } finally {
       setLogoBusy(false)
     }
@@ -97,14 +98,12 @@ export function IdentityForm({
     <div className="flex flex-col gap-6">
       {/* Logo — uploads immediately on selection, independent of the form below. */}
       <div className="flex flex-col gap-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        Logo
-        <span className="text-xs font-normal text-zinc-500">
-          Shown on your customers’ stamp cards so they recognize you instantly.
-        </span>
+        {t('logo')}
+        <span className="text-xs font-normal text-zinc-500">{t('logoHint')}</span>
         <div className="mt-1 flex items-center gap-4">
           <BusinessLogo name={name || initialName} logoUrl={logoUrl} className="h-16 w-16 text-lg" />
           <label className="flex h-12 cursor-pointer items-center justify-center rounded-lg border border-zinc-300 px-4 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-300">
-            {logoBusy ? 'Working…' : logoUrl ? 'Replace logo' : 'Upload logo'}
+            {logoBusy ? t('working') : logoUrl ? t('replaceLogo') : t('uploadLogo')}
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp"
@@ -120,7 +119,7 @@ export function IdentityForm({
               disabled={logoBusy}
               className="text-sm font-medium text-zinc-500 underline disabled:opacity-60"
             >
-              Remove
+              {tc('remove')}
             </button>
           )}
         </div>
@@ -137,10 +136,8 @@ export function IdentityForm({
       <form action={formAction} className="flex flex-col gap-6">
         {/* Business name */}
         <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          Business name
-          <span className="text-xs font-normal text-zinc-500">
-            How your business appears to customers.
-          </span>
+          {t('businessName')}
+          <span className="text-xs font-normal text-zinc-500">{t('businessNameHint')}</span>
           <input
             type="text"
             name="name"
@@ -161,7 +158,7 @@ export function IdentityForm({
               onChange={(e) => setUseAccent(e.target.checked)}
               className="h-5 w-5"
             />
-            Use a brand color on customer cards
+            {t('useBrandColor')}
           </label>
           {useAccent && (
             <label className="flex items-center gap-3 text-sm text-zinc-500">
@@ -171,7 +168,7 @@ export function IdentityForm({
                 onChange={(e) => setAccent(e.target.value)}
                 className="h-12 w-16 cursor-pointer rounded-lg border border-zinc-300 dark:border-zinc-700"
               />
-              Stamps on the customer card use this color.
+              {t('brandColorHint')}
             </label>
           )}
           {/* '' clears the color server-side when the accent is switched off. */}
@@ -183,7 +180,7 @@ export function IdentityForm({
           disabled={pending}
           className="h-16 w-full rounded-lg bg-black text-lg font-semibold text-white disabled:opacity-60 dark:bg-white dark:text-black"
         >
-          {pending ? 'Saving…' : 'Save identity'}
+          {pending ? tc('saving') : t('saveIdentity')}
         </button>
 
         {state && !state.ok && (
@@ -200,7 +197,7 @@ export function IdentityForm({
             role="status"
             className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700 dark:bg-green-950 dark:text-green-300"
           >
-            Saved — customers now see “{state.name}”.
+            {t('savedIdentity', { name: state.name })}
           </p>
         )}
       </form>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { getStaffClient } from '@/lib/supabase/staff-client'
+import { useTranslations } from '@/lib/i18n/I18nProvider'
 
 /** How long we wait for the customer's scan before offering the fallback. */
 const CONFIRM_TIMEOUT_MS = 90_000
@@ -38,6 +39,7 @@ export function ScanConfirmation({
   businessId: string
   onRequestManual: () => void
 }) {
+  const t = useTranslations('scanConfirm')
   const [phase, setPhase] = useState<Phase>({ kind: 'waiting', live: true })
   // The scan can land while the channel is still connecting, and a Realtime
   // event can race the deadline's direct check — resolve exactly once.
@@ -180,11 +182,9 @@ export function ScanConfirmation({
           <span className="relative inline-flex h-3 w-3 rounded-full bg-zinc-400" />
         </span>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Waiting for the customer to scan…
+          {t('waiting')}
           {!phase.live && (
-            <span className="block text-xs text-zinc-400">
-              Live confirmation is unavailable right now — the QR still works normally.
-            </span>
+            <span className="block text-xs text-zinc-400">{t('liveUnavailable')}</span>
           )}
         </p>
       </div>
@@ -194,19 +194,14 @@ export function ScanConfirmation({
   if (phase.kind === 'timeout') {
     return (
       <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 px-4 py-4 dark:border-zinc-800">
-        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          No scan received yet.
-        </p>
-        <p className="text-xs text-zinc-500">
-          The customer may still scan this QR until it expires. If their phone can’t
-          scan it, add the stamp manually instead.
-        </p>
+        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('timeoutTitle')}</p>
+        <p className="text-xs text-zinc-500">{t('timeoutBody')}</p>
         <button
           type="button"
           onClick={onRequestManual}
           className="h-12 rounded-lg border border-zinc-300 text-sm font-semibold text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
         >
-          Add stamp manually
+          {t('addManually')}
         </button>
       </div>
     )
@@ -224,15 +219,11 @@ export function ScanConfirmation({
         className="flex flex-col items-center gap-2 rounded-xl border-2 border-green-500 bg-green-50 px-4 py-6 text-center dark:border-green-600 dark:bg-green-950"
       >
         <span className="text-5xl" aria-hidden>🎉</span>
-        <p className="text-xl font-bold text-green-800 dark:text-green-200">
-          Scanned — reward earned!
-        </p>
+        <p className="text-xl font-bold text-green-800 dark:text-green-200">{t('eligibleTitle')}</p>
         <p className="text-base font-semibold text-green-700 dark:text-green-300">
-          {currentStamps} / {rewardThreshold} stamps — their next one is free.
+          {t('eligibleCount', { current: currentStamps ?? 0, total: rewardThreshold ?? 0 })}
         </p>
-        <p className="text-xs text-green-700/80 dark:text-green-400">
-          They can claim it from their phone; verify the code under “Verify reward”.
-        </p>
+        <p className="text-xs text-green-700/80 dark:text-green-400">{t('eligibleHint')}</p>
       </div>
     )
   }
@@ -249,10 +240,10 @@ export function ScanConfirmation({
         ✓
       </span>
       <p className="text-sm text-green-800 dark:text-green-300">
-        <span className="font-semibold">Scanned — stamp added.</span>
+        <span className="font-semibold">{t('scannedTitle')}</span>
         {currentStamps !== null && rewardThreshold !== null && (
           <span className="block">
-            Customer is now at {currentStamps} / {rewardThreshold} stamps.
+            {t('scannedCount', { current: currentStamps, total: rewardThreshold })}
           </span>
         )}
       </p>

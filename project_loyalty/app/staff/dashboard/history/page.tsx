@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createStaffClient } from '@/lib/supabase/staff-server'
+import { getTranslations, getLocale } from '@/lib/i18n/server'
+import { formatDateTime, formatAmount } from '@/lib/i18n/format'
+import type { TranslateFn } from '@/lib/i18n/translate'
 
 /**
  * Owner-only history log — the dispute-resolution tool. A reverse-chronological
@@ -12,26 +15,28 @@ import { createStaffClient } from '@/lib/supabase/staff-server'
  */
 
 const RANGES = [
-  { key: '7', label: '7d', days: 7 },
-  { key: '30', label: '30d', days: 30 },
-  { key: '90', label: '90d', days: 90 },
-  { key: 'all', label: 'All', days: null },
+  { key: '7', days: 7 },
+  { key: '30', days: 30 },
+  { key: '90', days: 90 },
+  { key: 'all', days: null },
 ] as const
 
-const MANUAL_REASON_LABELS: Record<string, string> = {
-  qr_failed: 'QR wouldn’t scan',
-  phone_dead: 'Phone dead / no phone',
-  staff_error: 'Staff error',
-  other: 'Other',
-}
+const REASON_CODES = ['qr_failed', 'phone_dead', 'staff_error', 'other']
 
-function manualDetail(detail: string | null): string {
-  if (!detail) return 'Manual stamp'
-  const idx = detail.indexOf(':')
-  const category = (idx === -1 ? detail : detail.slice(0, idx)).trim()
-  const note = idx === -1 ? '' : detail.slice(idx + 1).trim()
-  const label = MANUAL_REASON_LABELS[category] ?? category
-  return note ? `${label} — “${note}”` : label
+function manualDetailText(
+  detail: string | null,
+  staffName: string | null,
+  tm: TranslateFn,
+  t: TranslateFn,
+): string {
+  const d = detail ?? ''
+  const idx = d.indexOf(':')
+  const category = (idx === -1 ? d : d.slice(0, idx)).trim()
+  const note = idx === -1 ? '' : d.slice(idx + 1).trim()
+  let out = REASON_CODES.includes(category) ? tm(`reasons.${category}`) : category || t('manual')
+  if (note) out += ` — “${note}”`
+  if (staffName) out += ` · ${t('byStaff', { name: staffName })}`
+  return out
 }
 
 type Kind = 'scan' | 'manual' | 'redemption'
@@ -52,6 +57,9 @@ export default async function StaffHistoryPage({
   searchParams: Promise<{ range?: string }>
 }) {
   const supabase = await createStaffClient()
+  const t = await getTranslations('history')
+  const tm = await getTranslations('manualStamp')
+  const locale = await getLocale()
 
   const {
     data: { user },
@@ -87,11 +95,14 @@ export default async function StaffHistoryPage({
   })
   const result = data as unknown as HistoryResult | null
   const rows = result?.rows ?? []
+  const total = result?.total ?? 0
 
   return (
     <section className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white">History</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white">
+          {t('title')}
+        </h1>
         <div className="flex overflow-hidden rounded-lg border border-zinc-300 text-sm dark:border-zinc-700">
           {RANGES.map((r) => (
             <Link
@@ -104,35 +115,35 @@ export default async function StaffHistoryPage({
                   : 'px-2.5 py-1.5 text-zinc-600 dark:text-zinc-300'
               }
             >
-              {r.label}
+              {r.days == null ? t('rangeAll') : r.days}
             </Link>
           ))}
         </div>
       </div>
 
       <p className="-mt-2 text-sm text-zinc-500">
-        {range.days == null ? 'All time' : `Last ${range.days} days`} ·{' '}
-        {result?.total ?? 0} events
-        {(result?.total ?? 0) > rows.length ? ` (showing ${rows.length})` : ''}
+        {range.days == null ? t('allTime') : t('lastDays', { days: range.days })} ·{' '}
+        {t('eventsCount', { count: total })}
+        {total > rows.length ? ` ${t('showingCount', { shown: rows.length })}` : ''}
       </p>
 
       {error || !result?.ok ? (
         <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-          Could not load history. Please try again.
+          {t('loadError')}
         </p>
       ) : rows.length === 0 ? (
         <p className="rounded-xl border border-zinc-200 p-6 text-center text-sm text-zinc-500 dark:border-zinc-800">
-          No activity in this range.
+          {t('noActivity')}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
           <table className="w-full min-w-[520px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-xs text-zinc-500 dark:border-zinc-800">
-                <th className="px-3 py-2 font-medium">When</th>
-                <th className="px-3 py-2 font-medium">Type</th>
-                <th className="px-3 py-2 font-medium">Customer</th>
-                <th className="px-3 py-2 font-medium">Detail</th>
+              <tr className="border-b border-zinc-200 text-start text-xs text-zinc-500 dark:border-zinc-800">
+                <th className="px-3 py-2 text-start font-medium">{t('when')}</th>
+                <th className="px-3 py-2 text-start font-medium">{t('type')}</th>
+                <th className="px-3 py-2 text-start font-medium">{t('customer')}</th>
+                <th className="px-3 py-2 text-start font-medium">{t('detail')}</th>
               </tr>
             </thead>
             <tbody>
@@ -146,10 +157,10 @@ export default async function StaffHistoryPage({
                   }
                 >
                   <td className="whitespace-nowrap px-3 py-2 text-xs tabular-nums text-zinc-500">
-                    {new Date(row.event_time).toLocaleString()}
+                    {formatDateTime(row.event_time, locale)}
                   </td>
                   <td className="px-3 py-2">
-                    <TypeBadge kind={row.kind} />
+                    <TypeBadge kind={row.kind} t={t} />
                   </td>
                   <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-zinc-700 dark:text-zinc-300">
                     {row.customer_code ?? '—'}
@@ -157,13 +168,12 @@ export default async function StaffHistoryPage({
                   <td className="px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400">
                     {row.kind === 'manual' ? (
                       <span className="text-amber-800 dark:text-amber-200">
-                        {manualDetail(row.detail)}
-                        {row.staff_name ? ` · by ${row.staff_name}` : ''}
+                        {manualDetailText(row.detail, row.staff_name, tm, t)}
                       </span>
                     ) : row.kind === 'redemption' ? (
-                      <span>{row.detail === 'verified' ? 'Reward verified' : 'Code issued'}</span>
+                      <span>{row.detail === 'verified' ? t('rewardVerified') : t('codeIssued')}</span>
                     ) : row.amount != null ? (
-                      <span>Amount {row.amount.toFixed(2)}</span>
+                      <span>{t('amount', { amount: formatAmount(row.amount, locale) })}</span>
                     ) : (
                       <span className="text-zinc-400">—</span>
                     )}
@@ -178,17 +188,16 @@ export default async function StaffHistoryPage({
   )
 }
 
-function TypeBadge({ kind }: { kind: Kind }) {
+function TypeBadge({ kind, t }: { kind: Kind; t: TranslateFn }) {
   const style =
     kind === 'manual'
       ? 'bg-amber-200 text-amber-900 dark:bg-amber-800 dark:text-amber-100'
       : kind === 'redemption'
         ? 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200'
         : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'
-  const label = kind === 'manual' ? 'Manual' : kind === 'redemption' ? 'Redemption' : 'Scan'
   return (
     <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${style}`}>
-      {label}
+      {t(kind)}
     </span>
   )
 }
