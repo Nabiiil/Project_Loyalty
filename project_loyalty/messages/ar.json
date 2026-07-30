@@ -279,6 +279,7 @@
     "moreToGoOther": "بقي {count} أختام",
     "towardPrefix": "نحو",
     "stampCountAria": "عدد الأختام",
+    "stampsAria": "{current} من {total} أختام",
     "viewAllCards": "عرض كل بطاقاتي",
     "errors": {
       "already_scanned": "سبق مسح رمز QR هذا.",

@@ -1,6 +1,7 @@
 'use client'
 
 import { SignupInvite } from '@/components/SignupInvite'
+import { RewardProgress } from '@/components/RewardProgress'
 import { useTranslations } from '@/lib/i18n/I18nProvider'
 
 export type ScanResult =
@@ -97,9 +98,16 @@ export function StampCard({ result, businessName, rewardDescription }: Props) {
           </>
         )}
 
-        <StampGrid current={currentStamps} total={rewardThreshold} />
+        <RewardProgress
+          current={currentStamps}
+          total={rewardThreshold}
+          ariaLabel={t('stampsAria', { current: currentStamps, total: rewardThreshold })}
+          size="lg"
+        />
 
-        <p className="text-sm text-gray-400" aria-label={t('stampCountAria')}>
+        {/* Visible fraction; the count is announced by RewardProgress above, so
+            this stays decorative to avoid a duplicate screen-reader reading. */}
+        <p className="text-sm text-gray-400" aria-hidden>
           {currentStamps} / {rewardThreshold}
         </p>
 
@@ -109,29 +117,5 @@ export function StampCard({ result, businessName, rewardDescription }: Props) {
       </div>
       </div>
     </main>
-  )
-}
-
-function StampGrid({ current, total }: { current: number; total: number }) {
-  const visible = Math.min(total, 12)
-  const filled = Math.min(current, visible)
-  const cols = visible <= 6 ? visible : 6
-
-  return (
-    <div
-      className="grid gap-3 w-full"
-      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-      aria-hidden
-    >
-      {Array.from({ length: visible }).map((_, i) => (
-        <div
-          key={i}
-          className={[
-            'aspect-square rounded-full border-2',
-            i < filled ? 'bg-gray-900 border-gray-900' : 'border-gray-200 bg-white',
-          ].join(' ')}
-        />
-      ))}
-    </div>
   )
 }

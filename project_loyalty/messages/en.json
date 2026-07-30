@@ -279,6 +279,7 @@
     "moreToGoOther": "{count} more stamps to go",
     "towardPrefix": "toward",
     "stampCountAria": "stamp count",
+    "stampsAria": "{current} of {total} stamps",
     "viewAllCards": "View all my cards",
     "errors": {
       "already_scanned": "This QR code has already been scanned.",

@@ -1,6 +1,7 @@
 import type { EnrollmentRow } from './page'
 import { RewardClaim } from './RewardClaim'
 import { BusinessLogo } from '@/components/BusinessLogo'
+import { RewardProgress } from '@/components/RewardProgress'
 import { getTranslations } from '@/lib/i18n/server'
 
 // The DB constrains brand_color to lowercase #rrggbb; re-check before putting
@@ -25,9 +26,6 @@ export async function EnrollmentCard({
   const rewardDescription = businesses?.reward_description || t('freeItem')
   const accent = safeAccent(businesses?.brand_color)
   const rewardReached = current_stamps >= threshold
-  const visible = Math.min(threshold, 12)
-  const filled = Math.min(current_stamps, visible)
-  const cols = visible <= 6 ? visible : 6
 
   return (
     <div className="rounded-2xl border border-gray-100 p-5 flex flex-col gap-4 shadow-sm">
@@ -46,22 +44,13 @@ export async function EnrollmentCard({
         )}
       </div>
 
-      <div
-        className="grid gap-2"
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-        aria-label={t('stampsAria', { current: current_stamps, total: threshold })}
-      >
-        {Array.from({ length: visible }).map((_, i) => (
-          <div
-            key={i}
-            className={[
-              'aspect-square rounded-full border-2',
-              i < filled ? '' : 'border-gray-200 bg-white',
-            ].join(' ')}
-            style={i < filled ? { backgroundColor: accent, borderColor: accent } : undefined}
-          />
-        ))}
-      </div>
+      <RewardProgress
+        current={current_stamps}
+        total={threshold}
+        accent={accent}
+        ariaLabel={t('stampsAria', { current: current_stamps, total: threshold })}
+        size="sm"
+      />
 
       {rewardReached ? (
         <RewardClaim enrollmentId={enrollment.id} isClaimed={isClaimed} />

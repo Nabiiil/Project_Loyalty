@@ -279,6 +279,7 @@
     "moreToGoOther": "Encore {count} tampons",
     "towardPrefix": "vers",
     "stampCountAria": "nombre de tampons",
+    "stampsAria": "{current} sur {total} tampons",
     "viewAllCards": "Voir toutes mes cartes",
     "errors": {
       "already_scanned": "Ce QR code a déjà été scanné.",
