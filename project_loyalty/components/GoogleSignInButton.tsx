@@ -3,6 +3,13 @@
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useTranslations } from '@/lib/i18n/I18nProvider'
+import { DEVICE_TOKEN_COOKIE, buildOAuthRedirectTo } from '@/lib/customer-claim'
+
+/** Read a non-httpOnly cookie from document.cookie (browser only). */
+function readCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
+  return match ? decodeURIComponent(match[1]) : null
+}
 
 /**
  * "Continue with Google" one-tap option, shared by the signup drawer and the
@@ -10,8 +17,12 @@ import { useTranslations } from '@/lib/i18n/I18nProvider'
  * Google and back to /auth/callback -> /auth/complete. That completion step
  * attaches the Google identity to the EXISTING device-token customer row
  * (auth_user_id/email/claimed_at) — the same identity-preservation rule used by
- * the email/phone claim flow — so no earned stamps are ever orphaned. The
- * device_token cookie rides along with the redirect automatically.
+ * the email/phone claim flow — so no earned stamps are ever orphaned.
+ *
+ * The anonymous device_token is carried through the OAuth round-trip on the
+ * redirect URL (see buildOAuthRedirectTo) rather than trusting the SameSite=Lax
+ * cookie to survive the cross-site bounce to Google — which it often doesn't in
+ * Safari/ITP and in-app webviews, and was what orphaned anonymous stamps.
  */
 export function GoogleSignInButton() {
   const [pending, setPending] = useState(false)
@@ -25,9 +36,10 @@ export function GoogleSignInButton() {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     )
+    const deviceToken = readCookie(DEVICE_TOKEN_COOKIE)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: buildOAuthRedirectTo(window.location.origin, deviceToken) },
     })
     // On success the browser is already navigating to Google, so we only handle
     // the failure case here.

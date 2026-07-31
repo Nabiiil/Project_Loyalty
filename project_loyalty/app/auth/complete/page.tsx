@@ -2,10 +2,20 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import {
+  DEVICE_TOKEN_COOKIE,
+  DEVICE_TOKEN_QUERY_PARAM,
+  decideClaimAction,
+  resolveDeviceToken,
+} from '@/lib/customer-claim'
 
 type Service = ReturnType<typeof createServiceClient>
 
-export default async function AuthCompletePage() {
+export default async function AuthCompletePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const authClient = await createClient()
   const { data: { user } } = await authClient.auth.getUser()
 
@@ -13,8 +23,17 @@ export default async function AuthCompletePage() {
     redirect('/signup?error=auth_failed')
   }
 
+  // Resolve the anonymous identity from the cookie, falling back to the value
+  // carried through the OAuth round-trip (see lib/customer-claim). The email/
+  // phone flow always has the cookie; Google can arrive with only the carried
+  // value when the cross-site bounce dropped the cookie.
   const cookieStore = await cookies()
-  const deviceToken = cookieStore.get('device_token')?.value ?? null
+  const params = await searchParams
+  const carried = params[DEVICE_TOKEN_QUERY_PARAM]
+  const deviceToken = resolveDeviceToken({
+    cookieValue: cookieStore.get(DEVICE_TOKEN_COOKIE)?.value,
+    queryValue: Array.isArray(carried) ? carried[0] : carried,
+  })
 
   const service = createServiceClient()
 
@@ -35,36 +54,52 @@ export default async function AuthCompletePage() {
         .maybeSingle()
     : { data: null }
 
-  if (authCustomer) {
-    // Returning user. If this device also carries anonymous stamps, fold them
-    // into the existing account, then drop the now-empty anonymous row.
-    if (anonCustomer && anonCustomer.id !== authCustomer.id) {
-      await mergeEnrollments(service, anonCustomer.id, authCustomer.id)
-      await service.from('customers').delete().eq('id', anonCustomer.id)
-    }
-  } else if (anonCustomer) {
-    // First claim of an anonymous card: upgrade THIS row in place. Every stamp
-    // earned anonymously stays attached to the same customer_id — no second
-    // record, no merge. device_token/signup_source are left untouched so the
-    // scan history carries over exactly as it was.
-    await service
-      .from('customers')
-      .update({
+  // Resolve exactly one action, ordered so an anonymous identity is never
+  // orphaned: link/merge onto the existing row, and only insert when there is
+  // genuinely no prior identity. See lib/customer-claim.decideClaimAction.
+  const action = decideClaimAction({
+    authCustomerId: authCustomer?.id ?? null,
+    anonCustomerId: anonCustomer?.id ?? null,
+  })
+
+  switch (action.kind) {
+    case 'merge-into-existing':
+      // Returning user on a device that also carries anonymous stamps: fold them
+      // into the existing account, then drop the now-empty anonymous row.
+      await mergeEnrollments(service, action.anonCustomerId, action.authCustomerId)
+      await service.from('customers').delete().eq('id', action.anonCustomerId)
+      break
+
+    case 'link-anon-in-place':
+      // First claim of an anonymous card: upgrade THIS row in place. Every stamp
+      // earned anonymously stays attached to the same customer_id — no second
+      // record, no merge. device_token/signup_source are left untouched so the
+      // scan history carries over exactly as it was.
+      await service
+        .from('customers')
+        .update({
+          auth_user_id: user.id,
+          email: user.email ?? null,
+          phone_number: user.phone ?? null,
+          claimed_at: new Date().toISOString(),
+        })
+        .eq('id', action.anonCustomerId)
+      break
+
+    case 'insert-new':
+      // Direct signup with no prior anonymous activity — their first record.
+      await service.from('customers').insert({
         auth_user_id: user.id,
         email: user.email ?? null,
         phone_number: user.phone ?? null,
+        signup_source: 'direct_signup',
         claimed_at: new Date().toISOString(),
       })
-      .eq('id', anonCustomer.id)
-  } else {
-    // Direct signup with no prior anonymous activity — their first record.
-    await service.from('customers').insert({
-      auth_user_id: user.id,
-      email: user.email ?? null,
-      phone_number: user.phone ?? null,
-      signup_source: 'direct_signup',
-      claimed_at: new Date().toISOString(),
-    })
+      break
+
+    case 'noop-existing':
+      // Returning login with nothing anonymous to fold in.
+      break
   }
 
   redirect('/dashboard')
