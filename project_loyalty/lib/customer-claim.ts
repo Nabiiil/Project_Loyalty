@@ -18,6 +18,15 @@
  * it deterministically instead of relying on the cookie surviving. The device
  * token is an unverified anonymous identity pointer, not a secret (CLAUDE.md),
  * so passing it through the redirect URL is within the existing threat model.
+ *
+ * Retiring the token: once the claim has landed, the browser is authenticated
+ * and has no further use for an anonymous identity — so /auth/complete expires
+ * the cookie. Leaving it behind is a double-count risk, because a browser
+ * holding a token that points at an already-transferred identity could re-read
+ * it on the next scan or reload. The cookie is only half of that though: the
+ * database retires the anonymous row in the same transaction that moves its
+ * stamps (`merge_anonymous_customer`), so even a cookie that somehow survives
+ * has nothing left to resolve to.
  */
 
 /** Cookie name for the anonymous device-token identity. */
@@ -28,6 +37,41 @@ export const DEVICE_TOKEN_QUERY_PARAM = 'device_token'
 
 /** Matches the scan route's cookie lifetime (2 years). */
 export const DEVICE_TOKEN_MAX_AGE = 60 * 60 * 24 * 365 * 2
+
+/**
+ * Cookie attributes that RETIRE the device token in the browser.
+ *
+ * Path/sameSite/httpOnly must mirror the attributes the cookie was written with
+ * (see the scan route and /auth/callback) — a `Set-Cookie` whose path differs
+ * creates a second, empty cookie and leaves the original one sitting there.
+ * Both `maxAge: 0` and an epoch `expires` are sent because old Safari/WebView
+ * builds honour only one or the other, and those are exactly the browsers this
+ * QR-scan app runs in.
+ */
+export const RETIRED_DEVICE_TOKEN_COOKIE = {
+  path: '/',
+  maxAge: 0,
+  expires: new Date(0),
+  sameSite: 'lax',
+  httpOnly: false,
+} as const
+
+/**
+ * Should the browser's anonymous device token be retired now?
+ *
+ * The ordering this pins down is the whole point: the token is only ever
+ * cleared AFTER the claim has landed in the database. Clearing it first (or
+ * unconditionally) would strand anonymous stamps with no pointer left to reach
+ * them — the device would forget the identity while the account never gained
+ * it. So on any failure we deliberately leave the cookie in place: the stamps
+ * stay reachable and the next sign-in retries the claim.
+ */
+export function shouldRetireDeviceToken(input: {
+  hasDeviceToken: boolean
+  claimSucceeded: boolean
+}): boolean {
+  return input.hasDeviceToken && input.claimSucceeded
+}
 
 /**
  * Build the OAuth `redirectTo` target, carrying the anonymous device token as a

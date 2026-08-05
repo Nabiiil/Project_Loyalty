@@ -3,7 +3,10 @@ import {
   buildOAuthRedirectTo,
   resolveDeviceToken,
   decideClaimAction,
+  shouldRetireDeviceToken,
   DEVICE_TOKEN_QUERY_PARAM,
+  DEVICE_TOKEN_MAX_AGE,
+  RETIRED_DEVICE_TOKEN_COOKIE,
 } from './customer-claim'
 
 describe('decideClaimAction — anonymous identity is never orphaned', () => {
@@ -65,5 +68,40 @@ describe('device-token carry-through across the OAuth round-trip', () => {
     // what keeps the anon row findable so its stamps are preserved.
     expect(resolveDeviceToken({ cookieValue: null, queryValue: 'dt-carried' })).toBe('dt-carried')
     expect(resolveDeviceToken({ cookieValue: undefined, queryValue: undefined })).toBeNull()
+  })
+})
+
+describe('retiring the device token after the claim', () => {
+  it('retires the token once the claim has landed on the account', () => {
+    // The browser is authenticated now and has no use for an anonymous
+    // identity; leaving the cookie behind is what allows a later scan or reload
+    // to re-read an identity whose stamps were already transferred.
+    expect(shouldRetireDeviceToken({ hasDeviceToken: true, claimSucceeded: true })).toBe(true)
+  })
+
+  it('KEEPS the token when the claim failed — never clear before the stamps land', () => {
+    // The invariant that makes the merge safe in both directions: stamps are
+    // never removed from the device before they are safely on the account. If
+    // the transfer failed, the cookie is the only pointer left to those stamps,
+    // so it must survive for the next sign-in to retry.
+    expect(shouldRetireDeviceToken({ hasDeviceToken: true, claimSucceeded: false })).toBe(false)
+  })
+
+  it('has nothing to retire when the browser carried no token', () => {
+    expect(shouldRetireDeviceToken({ hasDeviceToken: false, claimSucceeded: true })).toBe(false)
+    expect(shouldRetireDeviceToken({ hasDeviceToken: false, claimSucceeded: false })).toBe(false)
+  })
+
+  it('expires the cookie on the same path/attributes it was written with', () => {
+    // A Set-Cookie whose path differs does not replace the original — it adds a
+    // second, empty cookie and leaves the live one readable. Both maxAge and
+    // expires are sent because old WebViews honour only one of the two.
+    expect(RETIRED_DEVICE_TOKEN_COOKIE.path).toBe('/')
+    expect(RETIRED_DEVICE_TOKEN_COOKIE.sameSite).toBe('lax')
+    expect(RETIRED_DEVICE_TOKEN_COOKIE.httpOnly).toBe(false)
+    expect(RETIRED_DEVICE_TOKEN_COOKIE.maxAge).toBe(0)
+    expect(RETIRED_DEVICE_TOKEN_COOKIE.expires.getTime()).toBe(0)
+    // And it must actually expire it, not renew it.
+    expect(RETIRED_DEVICE_TOKEN_COOKIE.maxAge).not.toBe(DEVICE_TOKEN_MAX_AGE)
   })
 })

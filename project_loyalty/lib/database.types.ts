@@ -331,6 +331,10 @@ export type Database = {
         Returns: { current_stamps: number; enrollment_id: string }[]
       }
       is_business_owner: { Args: { p_business_id: string }; Returns: boolean }
+      merge_anonymous_customer: {
+        Args: { p_anon_customer_id: string; p_target_customer_id: string }
+        Returns: Json
+      }
       scan_transaction: {
         Args: {
           p_auth_user_id?: string
