@@ -35,7 +35,13 @@ export default function ScanPage({ params }: { params: Promise<{ token: string }
           rewardReached: data.rewardReached,
         })
       } else {
-        setResult({ ok: false, error: data.error ?? 'server_error' })
+        setResult({
+          ok: false,
+          error: data.error ?? 'server_error',
+          // Present only for an expired/already-scanned code; drives the
+          // recognized-vs-newcomer branch on the StaleScan screen.
+          staleContext: data.staleContext ?? null,
+        })
       }
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps

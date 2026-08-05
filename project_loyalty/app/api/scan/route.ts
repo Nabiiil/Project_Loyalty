@@ -32,7 +32,20 @@ export async function POST(request: NextRequest) {
   const raw = data as any
 
   if (!raw?.ok) {
-    return NextResponse.json({ ok: false, error: raw?.error ?? 'server_error' })
+    const code = raw?.error ?? 'server_error'
+    return NextResponse.json({
+      ok: false,
+      error: code,
+      // Everything the stale-QR screen needs to be useful instead of a dead end.
+      // Purely descriptive — gathered AFTER scan_transaction has already made
+      // its decision, so it cannot influence expiry or single-use validation.
+      staleContext: await buildStaleContext(service, {
+        code,
+        qrToken,
+        authUserId: user?.id ?? null,
+        deviceToken: existingDeviceToken,
+      }),
+    })
   }
 
   // Fetch business name + the reward the customer is working toward.
@@ -69,4 +82,110 @@ export async function POST(request: NextRequest) {
   }
 
   return result
+}
+
+/**
+ * Context for the "this code is no longer valid" screen.
+ *
+ * `recognized` is what the screen branches on: a returning customer gets a way
+ * back to their balance, a first-time scanner gets told what the app is. Being
+ * recognized means an auth session, or a device token that has actually earned
+ * something — a bare token with no enrollments is someone who has never
+ * successfully collected a stamp, so they read as a newcomer.
+ */
+type StaleScanContext = {
+  recognized: boolean
+  businessName: string | null
+  progress: {
+    currentStamps: number
+    rewardThreshold: number
+    rewardDescription: string | null
+  } | null
+}
+
+/**
+ * Only 'token_expired' and 'already_scanned' describe a REAL code that simply
+ * ran out — those are the two worth softening. A malformed or forged token gets
+ * nothing back, so this never becomes a way to probe which business a made-up
+ * token belongs to.
+ */
+const STALE_CODES = new Set(['token_expired', 'already_scanned'])
+
+async function buildStaleContext(
+  service: ReturnType<typeof createServiceClient>,
+  input: {
+    code: string
+    qrToken: string
+    authUserId: string | null
+    deviceToken: string | null
+  },
+): Promise<StaleScanContext | null> {
+  if (!STALE_CODES.has(input.code)) return null
+
+  // Who is this? Auth session first, mirroring the identity-resolution priority
+  // in CLAUDE.md, then the device token.
+  const { data: customer } = input.authUserId
+    ? await service
+        .from('customers')
+        .select('id')
+        .eq('auth_user_id', input.authUserId)
+        .maybeSingle()
+    : input.deviceToken
+      ? await service
+          .from('customers')
+          .select('id')
+          .eq('device_token', input.deviceToken)
+          .maybeSingle()
+      : { data: null }
+
+  // An auth session counts on its own; a device token has to have earned
+  // something for its holder to have a balance worth returning to.
+  const { count: enrollmentCount } = customer
+    ? await service
+        .from('enrollments')
+        .select('id', { count: 'exact', head: true })
+        .eq('customer_id', customer.id)
+    : { count: 0 }
+
+  const recognized = Boolean(input.authUserId) || (enrollmentCount ?? 0) > 0
+
+  // The business behind the dead code. The transaction row survives expiry and
+  // scanning, so it still names the counter the customer is standing at.
+  const { data: txn } = await service
+    .from('transactions')
+    .select('business_id')
+    .eq('qr_token', input.qrToken)
+    .maybeSingle()
+
+  if (!txn) return { recognized, businessName: null, progress: null }
+
+  const { data: biz } = await service
+    .from('businesses')
+    .select('name, reward_threshold, reward_description')
+    .eq('id', txn.business_id)
+    .maybeSingle()
+
+  // Their standing at THIS business — the detail that turns "come back later"
+  // into something worth reading.
+  const { data: enrollment } = customer
+    ? await service
+        .from('enrollments')
+        .select('current_stamps')
+        .eq('customer_id', customer.id)
+        .eq('business_id', txn.business_id)
+        .maybeSingle()
+    : { data: null }
+
+  return {
+    recognized,
+    businessName: biz?.name ?? null,
+    progress:
+      enrollment && biz
+        ? {
+            currentStamps: enrollment.current_stamps,
+            rewardThreshold: biz.reward_threshold,
+            rewardDescription: biz.reward_description ?? null,
+          }
+        : null,
+  }
 }

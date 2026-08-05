@@ -281,6 +281,17 @@
     "stampCountAria": "stamp count",
     "stampsAria": "{current} of {total} stamps",
     "viewAllCards": "View all my cards",
+    "stale": {
+      "expiredTitle": "This code has expired",
+      "usedTitle": "This code has already been used",
+      "askStaff": "Ask staff for a fresh one — you won't lose any stamps.",
+      "yourCardAt": "Your card at {business}",
+      "viewMyPoints": "View my points",
+      "newHeading": "First time here?",
+      "newBody": "Collect a stamp every time you buy at participating shops, and earn free rewards — no app to download.",
+      "newAskStaff": "Ask staff for a fresh code to collect your first stamp.",
+      "newCta": "Create my card"
+    },
     "errors": {
       "already_scanned": "This QR code has already been scanned.",
       "token_expired": "This QR code has expired — ask for a new one.",

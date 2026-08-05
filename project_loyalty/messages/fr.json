@@ -281,6 +281,17 @@
     "stampCountAria": "nombre de tampons",
     "stampsAria": "{current} sur {total} tampons",
     "viewAllCards": "Voir toutes mes cartes",
+    "stale": {
+      "expiredTitle": "Ce code a expiré",
+      "usedTitle": "Ce code a déjà été utilisé",
+      "askStaff": "Demandez-en un nouveau au comptoir — vous ne perdez aucun tampon.",
+      "yourCardAt": "Votre carte chez {business}",
+      "viewMyPoints": "Voir mes points",
+      "newHeading": "Première visite ?",
+      "newBody": "Collectez un tampon à chaque achat dans les commerces participants et gagnez des récompenses gratuites — sans application à installer.",
+      "newAskStaff": "Demandez un nouveau code au comptoir pour recevoir votre premier tampon.",
+      "newCta": "Créer ma carte"
+    },
     "errors": {
       "already_scanned": "Ce QR code a déjà été scanné.",
       "token_expired": "Ce QR code a expiré — demandez-en un nouveau.",

@@ -2,6 +2,7 @@
 
 import { SignupInvite } from '@/components/SignupInvite'
 import { RewardProgress } from '@/components/RewardProgress'
+import { StaleScan, type StaleScanContext } from './StaleScan'
 import { useTranslations } from '@/lib/i18n/I18nProvider'
 
 export type ScanResult =
@@ -17,7 +18,7 @@ export type ScanResult =
       rewardThreshold: number
       rewardReached: boolean
     }
-  | { ok: false; error: string }
+  | { ok: false; error: string; staleContext?: StaleScanContext | null }
 
 const KNOWN_ERRORS = new Set([
   'already_scanned',
@@ -27,6 +28,14 @@ const KNOWN_ERRORS = new Set([
   'customer_not_found',
   'server_error',
 ])
+
+/**
+ * Codes that mean "this was a real code, it just ran out" — the customer did
+ * nothing wrong, so they get the actionable StaleScan screen instead of the
+ * error treatment. Everything else (malformed, forged, server trouble) IS a
+ * fault worth flagging plainly.
+ */
+const STALE_CODES = new Set(['token_expired', 'already_scanned'])
 
 type Props = {
   result: ScanResult
@@ -39,6 +48,16 @@ export function StampCard({ result, businessName, rewardDescription }: Props) {
 
   if (!result.ok) {
     const code = KNOWN_ERRORS.has(result.error) ? result.error : 'server_error'
+
+    if (STALE_CODES.has(code)) {
+      return (
+        <StaleScan
+          code={code as 'token_expired' | 'already_scanned'}
+          context={result.staleContext ?? null}
+        />
+      )
+    }
+
     return (
       <main className="min-h-dvh flex items-center justify-center bg-white px-6">
         <div className="w-full max-w-xs text-center space-y-4">
