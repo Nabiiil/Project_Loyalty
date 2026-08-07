@@ -20,6 +20,9 @@ function SignupContent() {
   const tc = useTranslations('common')
   const searchParams = useSearchParams()
   const authError = searchParams.get('error')
+  // Carried over from a failed sign-in ("no account for that email") so the
+  // customer does not retype the address they just typed. See lib/auth-errors.
+  const prefilledEmail = searchParams.get('email') ?? ''
 
   return (
     <main className="min-h-dvh flex flex-col bg-white">
@@ -48,7 +51,7 @@ function SignupContent() {
             <span className="h-px flex-1 bg-gray-200" />
           </div>
 
-          <EmailPhoneOtpForm />
+          <EmailPhoneOtpForm initialEmail={prefilledEmail} />
 
           <p className="text-center text-sm text-gray-400">
             {t('haveAccount')}{' '}

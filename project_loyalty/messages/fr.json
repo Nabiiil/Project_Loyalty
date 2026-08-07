@@ -240,14 +240,25 @@
     "signupTitle": "Créer un compte",
     "signupSubtitle": "Commencez à collecter des tampons dans tous les commerces que vous visitez.",
     "haveAccount": "Vous avez déjà un compte ?",
-    "otpSentEmail": "Nous avons envoyé un code à 6 chiffres à {email}.",
     "otpTestingHint": "Test en local ? Ouvrez la boîte de réception locale.",
-    "otpSentPhone": "Envoyé au {phone}",
     "useDifferentEmail": "Utiliser une autre adresse e-mail",
     "useDifferentNumber": "Utiliser un autre numéro",
     "drawerTitle": "Enregistrez vos points",
     "drawerSubtitle": "Conservez vos tampons et retrouvez tous vos commerces au même endroit. Vous pouvez continuer à collecter sans compte.",
-    "drawerAria": "Créer votre compte"
+    "drawerAria": "Créer votre compte",
+    "errors": {
+      "noAccount": "Nous n’avons pas trouvé de compte pour cet e-mail.",
+      "noAccountCta": "Créer un compte",
+      "invalidCode": "Ce code n’a pas fonctionné — il a peut-être expiré. Demandez-en un nouveau.",
+      "rateLimited": "Cela fait plusieurs essais d’affilée. Patientez une minute, puis réessayez.",
+      "emailRejected": "Cette adresse n’a pas été acceptée. Veuillez la vérifier.",
+      "phoneRejected": "Ce numéro n’a pas été accepté. Indiquez l’indicatif du pays, par exemple +212612345678.",
+      "unavailable": "Ce service n’est pas disponible pour le moment. Réessayez dans quelques minutes.",
+      "network": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
+      "generic": "Cela n’a pas fonctionné. Veuillez réessayer."
+    },
+    "emailFormat": "Cela ne ressemble pas à une adresse e-mail complète — vérifiez le @ ou le .com.",
+    "codeSentTo": "Nous avons envoyé un code à 6 chiffres à"
   },
   "customerDashboard": {
     "yourCards": "Vos cartes",

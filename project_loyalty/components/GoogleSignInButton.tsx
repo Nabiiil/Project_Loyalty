@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useTranslations } from '@/lib/i18n/I18nProvider'
 import { DEVICE_TOKEN_COOKIE, buildOAuthRedirectTo } from '@/lib/customer-claim'
+import { AuthErrorNotice } from './AuthErrorNotice'
+import { mapAuthError, type AuthMessageKey } from '@/lib/auth-errors'
 
 /** Read a non-httpOnly cookie from document.cookie (browser only). */
 function readCookie(name: string): string | null {
@@ -26,11 +28,11 @@ function readCookie(name: string): string | null {
  */
 export function GoogleSignInButton() {
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [errorKey, setErrorKey] = useState<AuthMessageKey | null>(null)
   const t = useTranslations('common')
 
   async function signIn() {
-    setError(null)
+    setErrorKey(null)
     setPending(true)
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,7 +46,10 @@ export function GoogleSignInButton() {
     // On success the browser is already navigating to Google, so we only handle
     // the failure case here.
     if (error) {
-      setError(error.message)
+      // Same mapping table as the OTP forms, so a dropped connection reads the
+      // same here as it does one field below. OAuth never reports "no account"
+      // — Google signs people up on the spot — so the flow is 'sign-up'.
+      setErrorKey(mapAuthError(error, { flow: 'sign-up', channel: 'email', stage: 'send' }))
       setPending(false)
     }
   }
@@ -60,11 +65,7 @@ export function GoogleSignInButton() {
         <GoogleGlyph />
         {pending ? t('connecting') : t('continueWithGoogle')}
       </button>
-      {error && (
-        <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </p>
-      )}
+      <AuthErrorNotice messageKey={errorKey} />
     </div>
   )
 }

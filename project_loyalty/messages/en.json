@@ -240,14 +240,25 @@
     "signupTitle": "Create account",
     "signupSubtitle": "Start earning stamps across every business you visit.",
     "haveAccount": "Already have an account?",
-    "otpSentEmail": "We sent a 6-digit code to {email}.",
     "otpTestingHint": "Testing locally? Open the local inbox.",
-    "otpSentPhone": "Sent to {phone}",
     "useDifferentEmail": "Use a different email",
     "useDifferentNumber": "Use a different number",
     "drawerTitle": "Save your points",
     "drawerSubtitle": "Keep your stamps and see every business in one place. You can keep earning without an account.",
-    "drawerAria": "Create your account"
+    "drawerAria": "Create your account",
+    "errors": {
+      "noAccount": "We couldn't find an account for that email.",
+      "noAccountCta": "Create an account",
+      "invalidCode": "That code didn't work — it may have expired. Ask for a new one.",
+      "rateLimited": "That's a lot of tries in a row. Please wait a minute and try again.",
+      "emailRejected": "That address wasn't accepted. Please double-check it.",
+      "phoneRejected": "That number wasn't accepted. Include the country code, like +212612345678.",
+      "unavailable": "This isn't available right now. Please try again in a few minutes.",
+      "network": "We couldn't reach the server. Check your connection and try again.",
+      "generic": "That didn't work. Please try again."
+    },
+    "emailFormat": "That doesn't look like a complete email address — check for a missing @ or .com.",
+    "codeSentTo": "We sent a 6-digit code to"
   },
   "customerDashboard": {
     "yourCards": "Your cards",
