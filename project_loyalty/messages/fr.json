@@ -122,9 +122,11 @@
     "addManually": "Ajouter un tampon manuellement",
     "eligibleTitle": "Scanné — récompense obtenue !",
     "eligibleCount": "{current} / {total} tampons — le prochain est offert.",
+    "eligibleCountNamed": "{name} — {current} / {total} tampons. Le prochain est offert.",
     "eligibleHint": "Il peut la réclamer depuis son téléphone ; vérifiez le code dans « Vérifier la récompense ».",
     "scannedTitle": "Scanné — tampon ajouté.",
-    "scannedCount": "Le client est maintenant à {current} / {total} tampons."
+    "scannedCount": "Le client est maintenant à {current} / {total} tampons.",
+    "scannedCountNamed": "{name} — {current} / {total} tampons."
   },
   "verify": {
     "enterCode": "Saisissez le code que le client vous montre.",
@@ -267,6 +269,27 @@
     "emptyTitle": "Aucun tampon pour l’instant",
     "emptyScan": "Scannez un QR code chez un commerce participant pour commencer.",
     "coldBody": "Scannez un QR code chez un commerce participant pour gagner votre premier tampon — ou créez un compte dès maintenant."
+  },
+  "customerProfile": {
+    "title": "Profil",
+    "subtitle": "Facultatif — vos points fonctionnent exactement pareil dans tous les cas.",
+    "displayName": "Nom affiché",
+    "displayNamePlaceholder": "Comment souhaitez-vous qu’on vous appelle ?",
+    "displayNameHint": "60 caractères maximum. Laissez vide si vous préférez.",
+    "privacyNote": "Les commerces que vous visitez verront ce nom lorsque vous scannez, afin que le personnel puisse vous saluer. Ils ne voient jamais votre e-mail ni votre téléphone.",
+    "promptTitle": "Bienvenue — comment doit-on vous appeler ?",
+    "promptBody": "Ajoutez votre nom pour que le personnel vous salue par votre prénom lorsque vous scannez. Totalement facultatif.",
+    "promptSkip": "Pas maintenant",
+    "accountSection": "Votre compte",
+    "accountHint": "Il s’agit du compte avec lequel vous êtes connecté. Pour en changer, contactez-nous.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Enregistré",
+    "backToCards": "Retour à mes cartes",
+    "tooLong": "C’est un peu long — 60 caractères maximum.",
+    "saveFailed": "Nous n’avons pas pu enregistrer. Veuillez réessayer.",
+    "notSignedInTitle": "Le profil est réservé aux comptes",
+    "notSignedInBody": "Vos tampons sont conservés sur cet appareil, même sans compte. Créez-en un pour ajouter un nom et retrouver vos cartes depuis n’importe quel téléphone."
   },
   "enrollmentCard": {
     "unknownBusiness": "Commerce inconnu",

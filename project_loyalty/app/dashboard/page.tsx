@@ -3,8 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { EnrollmentCard } from './EnrollmentCard'
 import { DashboardHeader } from './DashboardHeader'
+import { NamePrompt } from './NamePrompt'
 import { SignupInvite } from '@/components/SignupInvite'
 import { customerDashboardOutcome } from '@/lib/auth-guards'
+import { NAME_PROMPT_PARAM } from '@/lib/profile'
 import { getTranslations } from '@/lib/i18n/server'
 
 export type EnrollmentRow = {
@@ -20,23 +22,32 @@ export type EnrollmentRow = {
   } | null
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const cookieStore = await cookies()
   const authClient = await createClient()
   const { data: { user } } = await authClient.auth.getUser()
   const deviceToken = cookieStore.get('device_token')?.value ?? null
+  const params = await searchParams
 
   const service = createServiceClient()
 
   // Resolve customer ID — auth session takes priority
   let customerId: string | null = null
+  // Only ever set for an authenticated customer: anonymous rows have no profile
+  // (the column is unwritable without a session) and no profile entry point.
+  let displayName: string | null = null
   if (user) {
     const { data } = await service
       .from('customers')
-      .select('id')
+      .select('id, display_name')
       .eq('auth_user_id', user.id)
       .maybeSingle()
     customerId = data?.id ?? null
+    displayName = data?.display_name ?? null
   } else if (deviceToken) {
     const { data } = await service
       .from('customers')
@@ -57,9 +68,16 @@ export default async function DashboardPage() {
       ).data ?? []) as EnrollmentRow[]
     : []
 
+  // The invitation to add a name. Three conditions, all required: the server
+  // flagged this navigation as coming straight out of a signup, the customer is
+  // authenticated, and they genuinely have no name yet (so a Google prefill or
+  // a re-shared URL never triggers it).
+  const showNamePrompt =
+    params[NAME_PROMPT_PARAM] === '1' && !!user && displayName === null
+
   const userIdentity = user?.email ?? user?.phone ?? null
   const headerVariant = userIdentity
-    ? ({ kind: 'auth', identity: userIdentity } as const)
+    ? ({ kind: 'auth', identity: userIdentity, displayName } as const)
     : deviceToken
       ? ({ kind: 'anon' } as const)
       : ({ kind: 'none' } as const)
@@ -112,6 +130,11 @@ export default async function DashboardPage() {
       <div className="px-5 py-10">
       <div className="mx-auto max-w-sm flex flex-col gap-6">
         <DashboardHeader variant={headerVariant} />
+
+        {/* Shown only on the single navigation out of a signup that produced no
+            name — never on a later visit, and never when Google supplied one.
+            The component itself also honours a previous skip. */}
+        {showNamePrompt && <NamePrompt />}
 
         {customerId && (
           <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">

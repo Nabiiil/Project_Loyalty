@@ -82,6 +82,7 @@ export type Database = {
           claimed_at: string | null
           created_at: string
           device_token: string | null
+          display_name: string | null
           email: string | null
           id: string
           phone_number: string | null
@@ -92,6 +93,7 @@ export type Database = {
           claimed_at?: string | null
           created_at?: string
           device_token?: string | null
+          display_name?: string | null
           email?: string | null
           id?: string
           phone_number?: string | null
@@ -102,6 +104,7 @@ export type Database = {
           claimed_at?: string | null
           created_at?: string
           device_token?: string | null
+          display_name?: string | null
           email?: string | null
           id?: string
           phone_number?: string | null
@@ -322,13 +325,20 @@ export type Database = {
         }
         Returns: Json
       }
+      get_customer_display_name: {
+        Args: { p_customer_id: string }
+        Returns: string
+      }
       get_owner_analytics: {
         Args: { p_days?: number; p_staff_auth_user_id?: string }
         Returns: Json
       }
       increment_enrollment_stamp: {
         Args: { p_business_id: string; p_customer_id: string }
-        Returns: { current_stamps: number; enrollment_id: string }[]
+        Returns: {
+          current_stamps: number
+          enrollment_id: string
+        }[]
       }
       is_business_owner: { Args: { p_business_id: string }; Returns: boolean }
       merge_anonymous_customer: {

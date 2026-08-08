@@ -122,9 +122,11 @@
     "addManually": "Add stamp manually",
     "eligibleTitle": "Scanned — reward earned!",
     "eligibleCount": "{current} / {total} stamps — their next one is free.",
+    "eligibleCountNamed": "{name} — {current} / {total} stamps. Their next one is free.",
     "eligibleHint": "They can claim it from their phone; verify the code under “Verify reward”.",
     "scannedTitle": "Scanned — stamp added.",
-    "scannedCount": "Customer is now at {current} / {total} stamps."
+    "scannedCount": "Customer is now at {current} / {total} stamps.",
+    "scannedCountNamed": "{name} — {current} / {total} stamps."
   },
   "verify": {
     "enterCode": "Enter the code the customer shows you.",
@@ -267,6 +269,27 @@
     "emptyTitle": "No stamps yet",
     "emptyScan": "Scan a QR code at a participating business to get started.",
     "coldBody": "Scan a QR code at a participating business to earn your first stamp — or create an account now."
+  },
+  "customerProfile": {
+    "title": "Profile",
+    "subtitle": "Optional — your points work exactly the same either way.",
+    "displayName": "Display name",
+    "displayNamePlaceholder": "How you'd like to be greeted",
+    "displayNameHint": "Up to 60 characters. Leave it empty if you'd rather not.",
+    "privacyNote": "Businesses you visit will see this name when you scan, so staff can greet you. They never see your email or phone.",
+    "promptTitle": "Welcome — what should we call you?",
+    "promptBody": "Add your name so staff can greet you by it when you scan. Entirely optional.",
+    "promptSkip": "Not now",
+    "accountSection": "Your account",
+    "accountHint": "This is the account you're signed in with. To change it, contact us.",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "backToCards": "Back to my cards",
+    "tooLong": "That's a little long — please keep it to 60 characters or fewer.",
+    "saveFailed": "We couldn't save that just now. Please try again.",
+    "notSignedInTitle": "Profile is for account holders",
+    "notSignedInBody": "Your stamps are safe on this device without an account. Create one to add a name and reach your cards from any phone."
   },
   "enrollmentCard": {
     "unknownBusiness": "Unknown business",

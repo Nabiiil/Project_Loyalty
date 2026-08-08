@@ -10,6 +10,19 @@ const CONFIRM_TIMEOUT_MS = 90_000
 type Confirmation = {
   currentStamps: number | null
   rewardThreshold: number | null
+  /** The customer's chosen name, or null if they haven't set one. */
+  displayName: string | null
+}
+
+/**
+ * Wrap user-supplied text in Unicode isolates (FSI … PDI) before dropping it
+ * into a translated sentence — the textual equivalent of `<bdi>`, which we
+ * cannot use here because the name is interpolated into a string, not composed
+ * from JSX. Without it a Latin name inside the Arabic sentence drags the
+ * adjacent "—" and digits to the wrong side.
+ */
+function isolate(value: string): string {
+  return `⁨${value}⁩`
 }
 
 type Phase =
@@ -61,9 +74,13 @@ export function ScanConfirmation({
 
       // Fetch the new count for the confirmation copy. Both reads are scoped by
       // staff RLS. If they fail, still confirm — the scan itself is certain.
-      let result: Confirmation = { currentStamps: null, rewardThreshold: null }
+      let result: Confirmation = {
+        currentStamps: null,
+        rewardThreshold: null,
+        displayName: null,
+      }
       if (customerId) {
-        const [{ data: enrollment }, { data: business }] = await Promise.all([
+        const [{ data: enrollment }, { data: business }, { data: name }] = await Promise.all([
           supabase
             .from('enrollments')
             .select('current_stamps')
@@ -75,10 +92,17 @@ export function ScanConfirmation({
             .select('reward_threshold')
             .eq('id', businessId)
             .maybeSingle(),
+          // The ONLY staff-side path to a customer's name. It returns bare text
+          // and is scoped by auth.uid() to this staff member's own business, so
+          // it cannot reach a rival's customers or any contact detail — see
+          // migration 20260808140000. Null means "no name set" and "not yours"
+          // alike, and the copy below simply omits the name either way.
+          supabase.rpc('get_customer_display_name', { p_customer_id: customerId }),
         ])
         result = {
           currentStamps: enrollment?.current_stamps ?? null,
           rewardThreshold: business?.reward_threshold ?? null,
+          displayName: name ?? null,
         }
       }
       setPhase({ kind: 'confirmed', result })
@@ -207,9 +231,21 @@ export function ScanConfirmation({
     )
   }
 
-  const { currentStamps, rewardThreshold } = phase.result
+  const { currentStamps, rewardThreshold, displayName } = phase.result
   const eligible =
     currentStamps !== null && rewardThreshold !== null && currentStamps >= rewardThreshold
+
+  // Named and unnamed are separate whole sentences, not a name glued onto a
+  // count, so each language controls where the name sits. A customer without a
+  // name simply gets the original line — no placeholder, no stray dash.
+  const countLine = (key: 'scanned' | 'eligible') =>
+    displayName
+      ? t(`${key}CountNamed`, {
+          name: isolate(displayName),
+          current: currentStamps ?? 0,
+          total: rewardThreshold ?? 0,
+        })
+      : t(`${key}Count`, { current: currentStamps ?? 0, total: rewardThreshold ?? 0 })
 
   if (eligible) {
     // The "one more and it's free" moment — make it unmissable.
@@ -221,7 +257,7 @@ export function ScanConfirmation({
         <span className="text-5xl" aria-hidden>🎉</span>
         <p className="text-xl font-bold text-green-800 dark:text-green-200">{t('eligibleTitle')}</p>
         <p className="text-base font-semibold text-green-700 dark:text-green-300">
-          {t('eligibleCount', { current: currentStamps ?? 0, total: rewardThreshold ?? 0 })}
+          {countLine('eligible')}
         </p>
         <p className="text-xs text-green-700/80 dark:text-green-400">{t('eligibleHint')}</p>
       </div>
@@ -242,9 +278,7 @@ export function ScanConfirmation({
       <p className="text-sm text-green-800 dark:text-green-300">
         <span className="font-semibold">{t('scannedTitle')}</span>
         {currentStamps !== null && rewardThreshold !== null && (
-          <span className="block">
-            {t('scannedCount', { current: currentStamps, total: rewardThreshold })}
-          </span>
+          <span className="block">{countLine('scanned')}</span>
         )}
       </p>
     </div>

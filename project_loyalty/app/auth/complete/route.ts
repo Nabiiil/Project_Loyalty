@@ -9,6 +9,7 @@ import {
   resolveDeviceToken,
   shouldRetireDeviceToken,
 } from '@/lib/customer-claim'
+import { NAME_PROMPT_PARAM, displayNameFromOAuthMetadata } from '@/lib/profile'
 
 /**
  * Completion step for both sign-in surfaces: attach the freshly authenticated
@@ -58,11 +59,17 @@ export async function GET(request: NextRequest) {
   const { data: anonCustomer } = deviceToken
     ? await service
         .from('customers')
-        .select('id')
+        .select('id, display_name')
         .eq('device_token', deviceToken)
         .is('auth_user_id', null)
         .maybeSingle()
     : { data: null }
+
+  // A name Google (or any OAuth provider) already knows. Normalised to the same
+  // shape a typed name must satisfy, and null whenever it does not fit — never
+  // truncated. Email/phone OTP payloads carry no name, so this is null there,
+  // which is exactly what decides whether the customer is asked for one later.
+  const oauthName = displayNameFromOAuthMetadata(user.user_metadata)
 
   // Resolve exactly one action, ordered so an anonymous identity is never
   // orphaned: link/merge onto the existing row, and only insert when there is
@@ -75,6 +82,17 @@ export async function GET(request: NextRequest) {
   // Tracks whether this browser's identity is now safely on the account. Only a
   // true here earns the cookie clearing below — see shouldRetireDeviceToken.
   let claimSucceeded = true
+
+  // Whether the account ends this request with a name on it. Drives the
+  // post-signup prompt: only a fresh claim that produced no name gets asked.
+  let nameOnAccount: string | null = null
+
+  // Prefill applies ONLY to the two branches where an account is actually being
+  // created or claimed. Deliberately not on a returning sign-in: a customer who
+  // clears their name in the profile would otherwise have Google put it back on
+  // their next visit, which makes clearing impossible for OAuth customers. By
+  // that point the name is theirs to manage, not the provider's to restore.
+  const isFirstClaim = action.kind === 'insert-new' || action.kind === 'link-anon-in-place'
 
   switch (action.kind) {
     case 'merge-into-existing': {
@@ -104,6 +122,11 @@ export async function GET(request: NextRequest) {
       // record, no merge, nothing to double-count. device_token/signup_source
       // are left untouched so the scan history carries over exactly as it was;
       // only the browser's copy of the token is retired.
+      // Only fill display_name when the row does not already carry one, so a
+      // provider can never overwrite a name the customer chose themselves.
+      const keepExistingName = anonCustomer?.display_name ?? null
+      nameOnAccount = keepExistingName ?? oauthName
+
       const { error } = await service
         .from('customers')
         .update({
@@ -111,6 +134,9 @@ export async function GET(request: NextRequest) {
           email: user.email ?? null,
           phone_number: user.phone ?? null,
           claimed_at: new Date().toISOString(),
+          ...(keepExistingName === null && oauthName !== null
+            ? { display_name: oauthName }
+            : {}),
         })
         .eq('id', action.anonCustomerId)
 
@@ -123,12 +149,16 @@ export async function GET(request: NextRequest) {
 
     case 'insert-new': {
       // Direct signup with no prior anonymous activity — their first record.
+      // A brand-new row has no name to protect, so the provider's is safe to use.
+      nameOnAccount = oauthName
+
       const { error } = await service.from('customers').insert({
         auth_user_id: user.id,
         email: user.email ?? null,
         phone_number: user.phone ?? null,
         signup_source: 'direct_signup',
         claimed_at: new Date().toISOString(),
+        display_name: oauthName,
       })
 
       if (error) {
@@ -145,7 +175,17 @@ export async function GET(request: NextRequest) {
       break
   }
 
-  const response = NextResponse.redirect(new URL('/dashboard', origin))
+  // Ask for a name only when this was a fresh claim that produced none — i.e.
+  // the email/phone OTP paths, where no provider had one to give. A Google
+  // signup arrives already named and is never asked. The flag rides on the
+  // redirect rather than in storage so it exists for exactly one navigation:
+  // the moment after signup, once the points are already safely on the account.
+  const dashboardUrl = new URL('/dashboard', origin)
+  if (claimSucceeded && isFirstClaim && nameOnAccount === null) {
+    dashboardUrl.searchParams.set(NAME_PROMPT_PARAM, '1')
+  }
+
+  const response = NextResponse.redirect(dashboardUrl)
 
   // Retire the anonymous identity in the browser. Deliberately last, and
   // deliberately conditional: if the claim above failed, the cookie stays so the
